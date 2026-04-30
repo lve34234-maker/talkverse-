@@ -3,38 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>TalkVerse — 실시간 메시지 · 음성 · 영상 · 화면공유</title>
+<title>TalkVerse</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
 :root{
   --bg:#0b0d12; --bg-2:#11141b; --panel:#161a23; --panel-2:#1c2230;
   --line:#252b3a; --text:#e7eaf3; --mute:#8a93a8; --accent:#7c5cff;
   --accent-2:#22c1c3; --green:#22c55e; --red:#ef4444; --yellow:#f59e0b;
-  --blue:#3b82f6; --pink:#ec4899;
-  --shadow: 0 10px 30px rgba(0,0,0,.45);
-  --radius:14px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);
-  font-family:'Segoe UI', system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-family:'Segoe UI',system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
   -webkit-font-smoothing:antialiased; overflow:hidden;}
-button{font-family:inherit; cursor:pointer; border:none; background:transparent; color:inherit}
-input, textarea{font-family:inherit; color:inherit}
+button{font-family:inherit;cursor:pointer;border:none;background:transparent;color:inherit}
+input,textarea{font-family:inherit;color:inherit}
 
-/* ---------- Login ---------- */
-.login{
-  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+/* Auth */
+.auth{
+  position:fixed; inset:0; display:none; align-items:center; justify-content:center;
   background:
     radial-gradient(1200px 600px at 10% -10%, rgba(124,92,255,.35), transparent 60%),
     radial-gradient(1000px 500px at 110% 110%, rgba(34,193,195,.28), transparent 60%),
     linear-gradient(180deg,#0a0c12,#0b0d12);
-  z-index:50;
+  z-index:50; padding:20px;
 }
-.login .card{
-  width:min(440px, 92vw); padding:34px 28px; background:rgba(22,26,35,.85);
+.auth.show{display:flex}
+.auth .card{
+  width:min(440px,100%); padding:34px 28px; background:rgba(22,26,35,.85);
   backdrop-filter: blur(14px);
   border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow);
-  text-align:center;
 }
 .logo{
   width:64px;height:64px;margin:0 auto 14px; border-radius:18px;
@@ -43,25 +41,36 @@ input, textarea{font-family:inherit; color:inherit}
   box-shadow:0 10px 24px rgba(124,92,255,.35);
 }
 .logo svg{width:32px;height:32px;color:#fff}
-.brand{font-size:24px; font-weight:700; letter-spacing:.3px;}
+.brand{font-size:24px; font-weight:700; letter-spacing:.3px; text-align:center;}
 .brand span{background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
-.tagline{color:var(--mute); margin:6px 0 22px; font-size:13px;}
-.login input{
-  width:100%; padding:14px 14px; margin:8px 0; background:#0f1320;
+.tagline{color:var(--mute); margin:6px 0 22px; font-size:13px; text-align:center;}
+.field-group{margin-bottom:10px}
+.field-group label{display:block; font-size:12px; color:var(--mute); margin-bottom:6px; padding-left:2px}
+.auth input{
+  width:100%; padding:13px 14px; background:#0f1320;
   border:1px solid var(--line); border-radius:12px; color:var(--text); outline:none; font-size:14px;
+  transition:border-color .15s;
 }
-.login input:focus{border-color:var(--accent)}
-.login .btn{
-  width:100%; padding:13px; margin-top:10px; border-radius:12px; font-weight:600;
+.auth input:focus{border-color:var(--accent)}
+.auth .btn{
+  width:100%; padding:13px; margin-top:14px; border-radius:12px; font-weight:600;
   background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff;
-  box-shadow:0 8px 20px rgba(124,92,255,.35);
+  box-shadow:0 8px 20px rgba(124,92,255,.35); font-size:14px;
 }
-.login small{color:var(--mute); display:block; margin-top:14px; line-height:1.6}
+.auth .btn:disabled{opacity:.6; cursor:not-allowed}
+.auth .swap{text-align:center; margin-top:18px; color:var(--mute); font-size:13px;}
+.auth .swap a{color:var(--accent-2); text-decoration:none; font-weight:600; cursor:pointer}
+.auth .swap a:hover{text-decoration:underline}
+.error-banner{
+  background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.4);
+  color:#fca5a5; padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:14px;
+  display:none;
+}
+.error-banner.show{display:block}
 
-/* ---------- App layout ---------- */
+/* App */
 .app{display:none; height:100vh; width:100vw; overflow:hidden;}
 .app.show{display:flex}
-
 .sidebar{
   width:84px; background:#0e1118; border-right:1px solid var(--line);
   display:flex; flex-direction:column; align-items:center; padding:14px 0; gap:10px; flex-shrink:0;
@@ -77,17 +86,13 @@ input, textarea{font-family:inherit; color:inherit}
   border-radius:50%; background:var(--green); border:3px solid #0e1118;
 }
 .sidebar .me.offline::after{background:#6b7280}
-.sidebar .nav{display:flex; flex-direction:column; gap:6px; margin-top:8px; width:100%; align-items:center}
+.nav{display:flex; flex-direction:column; gap:6px; margin-top:8px; width:100%; align-items:center}
 .nav-btn{
   width:52px;height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center;
   color:var(--mute); transition:.2s; position:relative;
 }
 .nav-btn:hover{background:#161a23; color:var(--text)}
 .nav-btn.active{background:linear-gradient(135deg,rgba(124,92,255,.2),rgba(34,193,195,.15)); color:var(--text)}
-.nav-btn.active::before{
-  content:""; position:absolute; left:-14px; top:14px; width:4px; height:24px; border-radius:2px;
-  background:linear-gradient(180deg,var(--accent),var(--accent-2));
-}
 .nav-btn .badge{
   position:absolute; top:6px; right:6px; min-width:16px; height:16px; padding:0 4px;
   background:var(--red); color:#fff; font-size:10px; font-weight:700;
@@ -95,7 +100,6 @@ input, textarea{font-family:inherit; color:inherit}
 }
 .sidebar .spacer{flex:1}
 
-/* ---------- Chat list ---------- */
 .list-pane{
   width:340px; background:var(--bg-2); border-right:1px solid var(--line);
   display:flex; flex-direction:column; flex-shrink:0;
@@ -111,8 +115,9 @@ input, textarea{font-family:inherit; color:inherit}
   margin:10px 18px 8px; padding:10px 12px; background:#0f1320; border:1px solid var(--line);
   border-radius:12px; display:flex; align-items:center; gap:10px; font-size:12px;
 }
-.id-card .id-text{flex:1; color:var(--mute); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.id-card .id-val{color:var(--accent-2); font-family:monospace}
+.id-card .id-val{color:var(--accent-2); font-family:monospace; font-weight:600}
+.id-card .name-val{color:var(--text); font-weight:600; font-size:13px}
+.id-card .label{font-size:10px; color:var(--mute); text-transform:uppercase; letter-spacing:.5px}
 .id-card button{padding:5px 10px; background:#1c2230; border-radius:8px; font-size:11px; color:var(--text)}
 .id-card button:hover{background:#252b3a}
 
@@ -121,19 +126,21 @@ input, textarea{font-family:inherit; color:inherit}
   border-radius:12px; display:flex; align-items:center; gap:8px;
 }
 .search input{background:transparent; border:none; outline:none; flex:1; font-size:13px;}
+
 .tabs{display:flex; gap:4px; padding:0 14px 6px;}
-.tab{
-  padding:7px 12px; font-size:12px; color:var(--mute); border-radius:10px; cursor:pointer;
-}
+.tab{padding:7px 12px; font-size:12px; color:var(--mute); border-radius:10px; cursor:pointer; position:relative}
 .tab.active{background:#1c2230; color:var(--text)}
+.tab .count{
+  position:absolute; top:-3px; right:-3px; min-width:14px; height:14px; padding:0 3px;
+  background:var(--accent); color:#fff; font-size:9px; font-weight:700; border-radius:7px;
+  display:flex; align-items:center; justify-content:center;
+}
 
 .chats{flex:1; overflow-y:auto; padding:6px 8px 18px}
 .chats::-webkit-scrollbar{width:8px}
 .chats::-webkit-scrollbar-thumb{background:#222838;border-radius:4px}
 
-.empty-state{
-  text-align:center; padding:40px 20px; color:var(--mute);
-}
+.empty-state{text-align:center; padding:40px 20px; color:var(--mute);}
 .empty-state svg{width:60px;height:60px;margin-bottom:14px;opacity:.4}
 .empty-state h3{margin:0 0 6px; color:var(--text); font-size:15px}
 .empty-state p{margin:0 0 18px; font-size:13px; line-height:1.6}
@@ -141,6 +148,22 @@ input, textarea{font-family:inherit; color:inherit}
   padding:10px 18px; background:linear-gradient(135deg,var(--accent),var(--accent-2));
   border-radius:10px; color:#fff; font-weight:600; font-size:13px;
 }
+
+.req-item{
+  padding:11px 12px; margin:4px 0; border-radius:12px;
+  background:linear-gradient(90deg, rgba(245,158,11,.12), transparent);
+  border:1px solid rgba(245,158,11,.3);
+}
+.req-item .req-row{display:flex; align-items:center; gap:10px; margin-bottom:8px}
+.req-item .req-name{font-weight:600; font-size:14px}
+.req-item .req-uname{font-size:12px; color:var(--mute)}
+.req-item .req-actions{display:flex; gap:6px}
+.req-item .req-actions button{flex:1; padding:7px 0; border-radius:8px; font-size:12px; font-weight:600}
+.btn-accept{background:var(--green); color:#fff}
+.btn-reject{background:#3b4054; color:var(--text)}
+.req-out{opacity:.7}
+.req-out .req-actions{display:none}
+.req-out::after{content:"전송됨 — 응답 대기"; display:block; font-size:11px; color:var(--yellow); margin-top:4px}
 
 .chat-item{
   display:flex; gap:12px; align-items:center; padding:11px 12px; border-radius:12px;
@@ -153,14 +176,12 @@ input, textarea{font-family:inherit; color:inherit}
   display:flex; align-items:center; justify-content:center; font-weight:600; color:#fff;
   flex-shrink:0; position:relative; font-size:15px;
 }
-.avatar.online::after{
+.avatar.online::after,.avatar.offline::after{
   content:""; position:absolute; bottom:0; right:0; width:12px; height:12px;
-  border-radius:50%; background:var(--green); border:2px solid var(--bg-2);
+  border-radius:50%; border:2px solid var(--bg-2);
 }
-.avatar.offline::after{
-  content:""; position:absolute; bottom:0; right:0; width:12px; height:12px;
-  border-radius:50%; background:#6b7280; border:2px solid var(--bg-2);
-}
+.avatar.online::after{background:var(--green)}
+.avatar.offline::after{background:#6b7280}
 .chat-meta{flex:1; min-width:0}
 .chat-row1{display:flex; justify-content:space-between; align-items:center; gap:8px}
 .chat-name{font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
@@ -172,7 +193,6 @@ input, textarea{font-family:inherit; color:inherit}
   border-radius:10px; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;
 }
 
-/* ---------- Main ---------- */
 .main{flex:1; display:flex; flex-direction:column; min-width:0; background:var(--bg)}
 .topbar{
   height:64px; padding:0 18px; border-bottom:1px solid var(--line);
@@ -189,9 +209,7 @@ input, textarea{font-family:inherit; color:inherit}
 .icon-btn:hover{background:#1f2535; transform:translateY(-1px)}
 .icon-btn:disabled{opacity:.3; cursor:not-allowed; transform:none}
 .icon-btn.danger{background:var(--red)}
-.icon-btn.success{background:var(--green)}
 
-/* messages */
 .msgs{flex:1; overflow-y:auto; padding:24px 24px 12px}
 .msgs::-webkit-scrollbar{width:8px}
 .msgs::-webkit-scrollbar-thumb{background:#222838;border-radius:4px}
@@ -200,28 +218,17 @@ input, textarea{font-family:inherit; color:inherit}
   color:var(--mute); text-align:center; padding:30px;
 }
 .empty-chat svg{width:80px;height:80px;opacity:.3;margin-bottom:14px}
-.day{
-  text-align:center; color:var(--mute); font-size:11px; margin:18px 0;
-  letter-spacing:1px;
-}
+.day{text-align:center; color:var(--mute); font-size:11px; margin:18px 0; letter-spacing:1px;}
 .msg{display:flex; gap:10px; margin-bottom:14px; align-items:flex-end}
 .msg .av{width:32px;height:32px;border-radius:50%; flex-shrink:0; background:#27304a;
-  display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600;}
+  display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:#fff}
 .msg .bubble{
   max-width:62%; padding:10px 14px; background:#1a2030; border-radius:14px 14px 14px 4px;
-  font-size:14px; line-height:1.5; word-wrap:break-word;
+  font-size:14px; line-height:1.5; word-wrap:break-word; white-space:pre-wrap;
 }
 .msg .bubble .meta{color:var(--mute); font-size:10px; margin-top:4px}
 .msg.me{flex-direction:row-reverse}
-.msg.me .bubble{
-  background:linear-gradient(135deg,var(--accent),#5a3fe6); color:#fff;
-  border-radius:14px 14px 4px 14px;
-}
-.msg.system{justify-content:center}
-.msg.system .bubble{
-  background:transparent; color:var(--mute); font-size:12px; max-width:100%;
-  border:1px dashed var(--line); border-radius:8px; padding:6px 12px;
-}
+.msg.me .bubble{background:linear-gradient(135deg,var(--accent),#5a3fe6); color:#fff; border-radius:14px 14px 4px 14px;}
 
 .composer{
   border-top:1px solid var(--line); padding:12px 16px; background:var(--bg-2);
@@ -242,7 +249,7 @@ input, textarea{font-family:inherit; color:inherit}
 }
 .send:disabled{opacity:.3}
 
-/* ---------- Call overlay ---------- */
+/* Call */
 .call-overlay{
   position:fixed; inset:0; background:#05070b; z-index:60;
   display:none; flex-direction:column;
@@ -281,11 +288,6 @@ input, textarea{font-family:inherit; color:inherit}
   display:flex; align-items:center; gap:6px; z-index:2;
 }
 .tile.talking{outline:3px solid var(--green); outline-offset:-3px;}
-.tile .mute-mic{
-  position:absolute; right:12px; top:12px; width:30px; height:30px; border-radius:50%;
-  background:var(--red); display:flex; align-items:center; justify-content:center; color:#fff; z-index:2;
-}
-
 .call-top{
   position:absolute; top:0; left:0; right:0; padding:18px 22px;
   display:flex; justify-content:space-between; align-items:center;
@@ -313,8 +315,46 @@ input, textarea{font-family:inherit; color:inherit}
 .cc.danger{background:var(--red); width:64px;height:64px;}
 .cc.danger:hover{background:#dc2626}
 .cc.active{background:linear-gradient(135deg,var(--accent),var(--accent-2));}
+.share-banner{
+  position:absolute; top:18px; left:50%; transform:translateX(-50%);
+  background:rgba(34,193,195,.18); border:1px solid var(--accent-2); color:#a7f3f4;
+  padding:6px 14px; border-radius:999px; font-size:12px;
+  display:flex; align-items:center; gap:8px; z-index:3;
+}
+.share-banner .dot{width:8px;height:8px;border-radius:50%; background:var(--accent-2); animation:pulse 1.2s infinite}
+.pip{
+  position:absolute; right:18px; bottom:90px; width:200px; aspect-ratio:16/9;
+  border-radius:12px; overflow:hidden; border:2px solid #fff;
+  box-shadow:var(--shadow); background:#000; z-index:5;
+}
+.pip video{width:100%;height:100%;object-fit:cover}
+.pip .label{position:absolute; bottom:4px; left:4px; padding:2px 6px; font-size:10px; background:rgba(0,0,0,.6); border-radius:4px}
 
-/* incoming call */
+/* Modals */
+.modal-bg{
+  position:fixed; inset:0; z-index:65; display:none;
+  background:rgba(5,7,11,.7); backdrop-filter: blur(6px);
+  align-items:center; justify-content:center; padding:20px;
+}
+.modal-bg.show{display:flex}
+.modal{
+  width:min(440px,100%); background:var(--bg-2); border:1px solid var(--line);
+  border-radius:20px; padding:26px; box-shadow:var(--shadow);
+}
+.modal h3{margin:0 0 8px; font-size:18px}
+.modal p{margin:0 0 14px; color:var(--mute); font-size:13px; line-height:1.6}
+.modal input{
+  width:100%; padding:12px; background:#0f1320; border:1px solid var(--line);
+  border-radius:10px; color:var(--text); outline:none; font-size:14px; margin-bottom:10px;
+}
+.modal input:focus{border-color:var(--accent)}
+.modal .btns{display:flex; gap:10px; margin-top:6px}
+.modal .btns button{flex:1; padding:12px; border-radius:10px; font-weight:600; font-size:14px}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff}
+.btn-secondary{background:#1c2230; color:var(--text)}
+.btn-danger{background:var(--red); color:#fff}
+
+/* Incoming */
 .incoming{
   position:fixed; inset:0; z-index:70; display:none;
   background:rgba(5,7,11,.7); backdrop-filter: blur(8px);
@@ -338,53 +378,22 @@ input, textarea{font-family:inherit; color:inherit}
 .incoming h3{margin:0 0 4px; font-size:22px}
 .incoming p{margin:0; color:var(--mute); font-size:14px}
 .incoming .row{display:flex; gap:36px; justify-content:center; margin-top:24px}
-.incoming .b{
-  display:flex; flex-direction:column; align-items:center; gap:8px; font-size:12px; color:var(--mute);
-}
-.incoming .b .btn{
-  width:64px;height:64px;border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff;
-}
+.incoming .b{display:flex; flex-direction:column; align-items:center; gap:8px; font-size:12px; color:var(--mute);}
+.incoming .b .btn{width:64px;height:64px;border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff;}
 .incoming .b.accept .btn{background:var(--green)}
 .incoming .b.reject .btn{background:var(--red)}
 
-/* generic modal */
-.modal-bg{
-  position:fixed; inset:0; z-index:65; display:none;
-  background:rgba(5,7,11,.7); backdrop-filter: blur(6px);
-  align-items:center; justify-content:center; padding:20px;
-}
-.modal-bg.show{display:flex}
-.modal{
-  width:min(440px, 100%); background:var(--bg-2); border:1px solid var(--line);
-  border-radius:20px; padding:26px; box-shadow:var(--shadow);
-}
-.modal h3{margin:0 0 8px; font-size:18px}
-.modal p{margin:0 0 14px; color:var(--mute); font-size:13px; line-height:1.6}
-.modal input{
-  width:100%; padding:12px; background:#0f1320; border:1px solid var(--line);
-  border-radius:10px; color:var(--text); outline:none; font-size:14px; margin-bottom:10px;
-}
-.modal input:focus{border-color:var(--accent)}
-.modal .btns{display:flex; gap:10px; margin-top:6px}
-.modal .btns button{flex:1; padding:12px; border-radius:10px; font-weight:600; font-size:14px}
-.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff}
-.btn-secondary{background:#1c2230; color:var(--text)}
-.btn-danger{background:var(--red); color:#fff}
-
-/* toast */
 .toast-wrap{position:fixed; top:20px; right:20px; z-index:80; display:flex; flex-direction:column; gap:8px}
 .toast{
   background:#1c2230; border:1px solid var(--line); border-radius:12px; padding:12px 16px;
   display:flex; align-items:center; gap:10px; min-width:240px; max-width:340px; box-shadow:var(--shadow);
-  animation:slidein .25s ease-out;
-  font-size:13px;
+  animation:slidein .25s ease-out; font-size:13px;
 }
 @keyframes slidein{from{transform:translateX(20px); opacity:0}to{transform:translateX(0); opacity:1}}
 .toast .dot{width:8px;height:8px;border-radius:50%; background:var(--green); flex-shrink:0;}
 .toast.error .dot{background:var(--red)}
 .toast.warn .dot{background:var(--yellow)}
 
-/* settings panel */
 .panel{
   position:fixed; right:0; top:0; bottom:0; width:min(380px, 92vw);
   background:var(--bg-2); border-left:1px solid var(--line); z-index:55;
@@ -402,14 +411,10 @@ input, textarea{font-family:inherit; color:inherit}
 .toggle{
   width:42px; height:24px; background:#2a3145; border-radius:12px; position:relative; cursor:pointer; transition:.2s; flex-shrink:0;
 }
-.toggle::after{
-  content:""; position:absolute; left:3px; top:3px; width:18px; height:18px;
-  background:#fff; border-radius:50%; transition:.2s;
-}
+.toggle::after{content:""; position:absolute; left:3px; top:3px; width:18px; height:18px; background:#fff; border-radius:50%; transition:.2s;}
 .toggle.on{background:linear-gradient(135deg,var(--accent),var(--accent-2))}
 .toggle.on::after{left:21px}
 
-/* mobile */
 .mobile-back{display:none}
 @media (max-width: 860px){
   .sidebar{display:none}
@@ -426,42 +431,19 @@ input, textarea{font-family:inherit; color:inherit}
   .cc.danger{width:56px;height:56px}
 }
 
-/* screen-share PiP */
-.pip{
-  position:absolute; right:18px; bottom:90px; width:200px; aspect-ratio:16/9;
-  border-radius:12px; overflow:hidden; border:2px solid #fff;
-  box-shadow: var(--shadow); background:#000;
-  z-index:5;
-}
-.pip video{width:100%;height:100%;object-fit:cover}
-.pip .label{position:absolute; bottom:4px; left:4px; padding:2px 6px; font-size:10px; background:rgba(0,0,0,.6); border-radius:4px}
-
-.share-banner{
-  position:absolute; top:18px; left:50%; transform:translateX(-50%);
-  background:rgba(34,193,195,.18); border:1px solid var(--accent-2); color:#a7f3f4;
-  padding:6px 14px; border-radius:999px; font-size:12px;
-  display:flex; align-items:center; gap:8px; z-index:3;
-}
-.share-banner .dot{width:8px;height:8px;border-radius:50%; background:var(--accent-2); animation:pulse 1.2s infinite}
-
 .icon{width:20px;height:20px;display:inline-block;flex-shrink:0}
 .icon-sm{width:16px;height:16px}
 .icon-lg{width:28px;height:28px}
 
-/* connection status pill */
-.conn-status{
-  display:inline-flex; align-items:center; gap:6px;
-  padding:3px 8px; border-radius:6px; font-size:11px;
-  background:rgba(34,197,94,.12); color:#86efac;
-}
+.conn-status{display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:6px; font-size:11px; background:rgba(34,197,94,.12); color:#86efac;}
 .conn-status.offline{background:rgba(107,114,128,.18); color:#9ca3af}
 .conn-status .dot{width:6px;height:6px;border-radius:50%; background:currentColor}
 </style>
 </head>
 <body>
 
-<!-- ============== LOGIN ============== -->
-<div class="login" id="login">
+<!-- LOGIN -->
+<div class="auth show" id="loginScreen">
   <div class="card">
     <div class="logo">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -469,22 +451,57 @@ input, textarea{font-family:inherit; color:inherit}
       </svg>
     </div>
     <div class="brand">Talk<span>Verse</span></div>
-    <div class="tagline">실시간 P2P 메시지 · 음성 · 영상 · 화면공유</div>
-    <input id="loginName" type="text" placeholder="표시할 이름 (예: 홍길동)" maxlength="20">
-    <button class="btn" onclick="doLogin()">접속하기</button>
-    <small>
-      서버 없이 브라우저 간 직접 연결(P2P)됩니다.<br>
-      접속하면 고유 ID가 발급됩니다. 친구에게 ID를 공유하면 추가할 수 있어요.
-    </small>
+    <div class="tagline">로그인</div>
+    <div class="error-banner" id="loginError"></div>
+    <div class="field-group">
+      <label>아이디</label>
+      <input id="loginUsername" type="text" placeholder="아이디" autocomplete="username">
+    </div>
+    <div class="field-group">
+      <label>비밀번호</label>
+      <input id="loginPassword" type="password" placeholder="비밀번호" autocomplete="current-password">
+    </div>
+    <button class="btn" id="btnLogin">로그인</button>
+    <div class="swap">계정이 없으신가요? <a onclick="showSignup()">회원가입</a></div>
   </div>
 </div>
 
-<!-- ============== APP ============== -->
-<div class="app" id="app">
+<!-- SIGNUP -->
+<div class="auth" id="signupScreen">
+  <div class="card">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+      </svg>
+    </div>
+    <div class="brand">Talk<span>Verse</span></div>
+    <div class="tagline">회원가입</div>
+    <div class="error-banner" id="signupError"></div>
+    <div class="field-group">
+      <label>아이디 (영문 소문자/숫자/_, 3~20자)</label>
+      <input id="signupUsername" type="text" placeholder="ex) gildong_99" autocomplete="username">
+    </div>
+    <div class="field-group">
+      <label>표시 이름</label>
+      <input id="signupDisplay" type="text" placeholder="홍길동" maxlength="30">
+    </div>
+    <div class="field-group">
+      <label>비밀번호 (4자 이상)</label>
+      <input id="signupPassword" type="password" placeholder="비밀번호" autocomplete="new-password">
+    </div>
+    <div class="field-group">
+      <label>비밀번호 확인</label>
+      <input id="signupPassword2" type="password" placeholder="비밀번호 다시 입력" autocomplete="new-password">
+    </div>
+    <button class="btn" id="btnSignup">계정 만들기</button>
+    <div class="swap">이미 계정이 있으신가요? <a onclick="showLogin()">로그인</a></div>
+  </div>
+</div>
 
-  <!-- Sidebar -->
+<!-- APP -->
+<div class="app" id="app">
   <aside class="sidebar">
-    <div class="me" id="meAvatar" title="내 프로필" onclick="toggleSettings()">U</div>
+    <div class="me" id="meAvatar" title="설정" onclick="toggleSettings()">U</div>
     <nav class="nav">
       <button class="nav-btn active" title="채팅">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -495,12 +512,11 @@ input, textarea{font-family:inherit; color:inherit}
       </button>
     </nav>
     <div class="spacer"></div>
-    <button class="nav-btn" id="openSettings" onclick="toggleSettings()" title="설정">
+    <button class="nav-btn" onclick="toggleSettings()" title="설정">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
   </aside>
 
-  <!-- Chat list -->
   <section class="list-pane">
     <div class="list-head">
       <h2>채팅</h2>
@@ -509,25 +525,25 @@ input, textarea{font-family:inherit; color:inherit}
       </button>
     </div>
     <div class="id-card">
-      <div>
-        <div style="font-size:10px; color:var(--mute); text-transform:uppercase; letter-spacing:.5px;">내 ID</div>
-        <div class="id-val" id="myIdView">생성중...</div>
+      <div style="flex:1; min-width:0">
+        <div class="label">내 아이디</div>
+        <div><span class="name-val" id="myDisplayName">—</span> <span style="color:var(--mute)">(@<span class="id-val" id="myUsername">—</span>)</span></div>
       </div>
       <button onclick="copyMyId()">복사</button>
     </div>
     <div class="search">
       <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="searchInput" type="text" placeholder="이름 검색...">
+      <input id="searchInput" type="text" placeholder="이름·아이디 검색...">
     </div>
     <div class="tabs">
       <div class="tab active" data-filter="all">전체</div>
       <div class="tab" data-filter="online">온라인</div>
       <div class="tab" data-filter="unread">안읽음</div>
+      <div class="tab" data-filter="requests">요청<span class="count" id="reqCount" style="display:none">0</span></div>
     </div>
     <div class="chats" id="chatList"></div>
   </section>
 
-  <!-- Main -->
   <section class="main">
     <header class="topbar">
       <button class="icon-btn mobile-back" onclick="document.body.dataset.view='list'">
@@ -547,7 +563,7 @@ input, textarea{font-family:inherit; color:inherit}
         <button class="icon-btn" id="btnVideo" title="화상통화">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
         </button>
-        <button class="icon-btn" id="btnInfo" title="정보 / 삭제" onclick="showContactInfo()">
+        <button class="icon-btn" title="정보 / 삭제" onclick="showContactInfo()">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         </button>
       </div>
@@ -557,7 +573,7 @@ input, textarea{font-family:inherit; color:inherit}
       <div class="empty-chat">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <div style="font-size:15px;color:var(--text);margin-bottom:6px">대화를 시작하세요</div>
-        <div style="font-size:13px">친구 ID를 추가하고 양쪽 모두 수락하면<br>채팅과 통화가 가능합니다.</div>
+        <div style="font-size:13px">친구의 아이디를 추가하고 양쪽 모두 수락하면<br>채팅과 통화가 가능합니다.</div>
       </div>
     </div>
 
@@ -570,10 +586,9 @@ input, textarea{font-family:inherit; color:inherit}
       </button>
     </div>
   </section>
-
 </div>
 
-<!-- ============== INCOMING CALL ============== -->
+<!-- INCOMING -->
 <div class="incoming" id="incoming">
   <div class="card">
     <div class="av-big" id="incAv">M</div>
@@ -596,41 +611,29 @@ input, textarea{font-family:inherit; color:inherit}
   </div>
 </div>
 
-<!-- ============== CALL OVERLAY ============== -->
+<!-- CALL -->
 <div class="call-overlay" id="callOverlay">
-  <div class="call-stage" id="callStage">
+  <div class="call-stage">
     <div class="call-top">
       <div class="call-info">
         <div class="title" id="callTitle">통화중</div>
         <div class="sub">
           <span id="callTime">00:00</span>
-          <span id="callQuality">· P2P 직접 연결</span>
+          <span>· P2P 직접 연결</span>
         </div>
       </div>
-      <div class="recording" id="recBadge" style="display:none">
-        <div class="dot"></div> 녹화중
-      </div>
+      <div class="recording" id="recBadge" style="display:none"><div class="dot"></div> 녹화중</div>
     </div>
-
-    <div class="share-banner" id="shareBanner" style="display:none">
-      <div class="dot"></div> 화면 공유 중
-    </div>
-
+    <div class="share-banner" id="shareBanner" style="display:none"><div class="dot"></div> 화면 공유 중</div>
     <div class="tile-grid" id="tileGrid"></div>
-
     <div class="pip" id="pipLocal" style="display:none">
       <video id="pipVideo" autoplay muted playsinline></video>
       <div class="label">나</div>
     </div>
   </div>
-
   <div class="call-controls">
-    <button class="cc" id="ccMic" onclick="toggleMic()" title="마이크">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-    </button>
-    <button class="cc" id="ccCam" onclick="toggleCam()" title="카메라">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-    </button>
+    <button class="cc" id="ccMic" onclick="toggleMic()" title="마이크"></button>
+    <button class="cc" id="ccCam" onclick="toggleCam()" title="카메라"></button>
     <button class="cc" id="ccShare" onclick="toggleShare()" title="화면공유">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
     </button>
@@ -643,12 +646,12 @@ input, textarea{font-family:inherit; color:inherit}
   </div>
 </div>
 
-<!-- ============== ADD CONTACT MODAL ============== -->
+<!-- ADD CONTACT -->
 <div class="modal-bg" id="addContactModal">
   <div class="modal">
     <h3>친구 추가</h3>
-    <p>친구의 ID를 입력하세요. 상대가 수락하면 채팅과 통화가 가능합니다.<br>(상대도 TalkVerse에 접속해 있어야 합니다)</p>
-    <input id="addPeerId" type="text" placeholder="상대방 ID (예: tv-abc-123)" autocomplete="off">
+    <p>친구의 아이디를 입력하세요. 상대가 수락하면 채팅과 통화가 가능합니다.<br>(상대도 같은 사이트에 접속해 있어야 합니다)</p>
+    <input id="addUsername" type="text" placeholder="아이디 (예: gildong_99)" autocomplete="off">
     <div class="btns">
       <button class="btn-secondary" onclick="closeAddContact()">취소</button>
       <button class="btn-primary" onclick="sendFriendRequest()">요청 보내기</button>
@@ -656,7 +659,7 @@ input, textarea{font-family:inherit; color:inherit}
   </div>
 </div>
 
-<!-- ============== FRIEND REQUEST MODAL ============== -->
+<!-- FRIEND REQUEST -->
 <div class="modal-bg" id="friendReqModal">
   <div class="modal">
     <h3>친구 요청</h3>
@@ -668,7 +671,7 @@ input, textarea{font-family:inherit; color:inherit}
   </div>
 </div>
 
-<!-- ============== CONTACT INFO / DELETE MODAL ============== -->
+<!-- CONTACT INFO -->
 <div class="modal-bg" id="contactInfoModal">
   <div class="modal">
     <h3 id="ciName">친구 정보</h3>
@@ -680,7 +683,7 @@ input, textarea{font-family:inherit; color:inherit}
   </div>
 </div>
 
-<!-- Settings panel -->
+<!-- SETTINGS -->
 <aside class="panel" id="settingsPanel">
   <div class="panel-head">
     <h3 style="margin:0">설정</h3>
@@ -692,8 +695,8 @@ input, textarea{font-family:inherit; color:inherit}
     <div class="section">
       <h4>계정</h4>
       <div class="row-item"><span>이름</span><span class="v" id="setName">—</span></div>
-      <div class="row-item"><span>내 ID</span><span class="v" id="setId">—</span></div>
-      <div class="row-item"><span>연결 상태</span><span class="v" id="setConn"><span class="conn-status offline"><span class="dot"></span>연결중</span></span></div>
+      <div class="row-item"><span>아이디</span><span class="v" id="setId">—</span></div>
+      <div class="row-item"><span>네트워크</span><span class="v" id="setConn"><span class="conn-status offline"><span class="dot"></span>연결중</span></span></div>
     </div>
     <div class="section">
       <h4>오디오 / 비디오</h4>
@@ -708,11 +711,11 @@ input, textarea{font-family:inherit; color:inherit}
     </div>
     <div class="section">
       <h4>관리</h4>
-      <div class="row-item"><span>모든 데이터 초기화</span>
-        <button class="icon-btn danger" style="width:auto;padding:6px 14px;font-size:12px;background:var(--red)" onclick="resetAll()">초기화</button>
-      </div>
       <div class="row-item"><span>로그아웃</span>
         <button class="icon-btn" style="width:auto;padding:6px 14px;font-size:12px" onclick="logout()">로그아웃</button>
+      </div>
+      <div class="row-item"><span>이 계정 삭제</span>
+        <button class="icon-btn" style="width:auto;padding:6px 14px;font-size:12px;background:var(--red)" onclick="deleteAccount()">삭제</button>
       </div>
     </div>
   </div>
@@ -722,420 +725,444 @@ input, textarea{font-family:inherit; color:inherit}
 
 <script>
 /* =========================================================
- * TalkVerse — Real P2P over PeerJS
+ *  TalkVerse — Serverless P2P (PeerJS) with local accounts
  * ========================================================= */
+const PEER_PREFIX = 'tvfree_';     // 모든 PeerID는 이 prefix를 사용 (전역 namespace)
+const COLORS=['#ec4899','#3b82f6','#f59e0b','#22c55e','#a855f7','#ef4444','#06b6d4','#f97316','#84cc16','#8b5cf6'];
+const STORE_KEY = 'talkverse:v3';
 
-const STORAGE_KEY = 'talkverse:v2';
-const COLORS = ['#ec4899','#3b82f6','#f59e0b','#22c55e','#a855f7','#ef4444','#06b6d4','#f97316','#84cc16','#8b5cf6'];
-
-let me = { name:'', peerId:'', avatar:'U' };
-let peer = null;       // PeerJS instance
-let connections = {};  // peerId -> DataConnection
-let activeFilter = 'all';
-let currentChat = null; // peerId
-let pendingFriendRequest = null; // { peerId, name, conn }
-let pendingOutgoingFR = {}; // peerId -> name (we sent request, waiting for accept)
-
-// load state
-let state = loadState();
-
-function loadState(){
-  try{
-    const s = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
-    if(!s) return { contacts:{}, messages:{}, name:'', peerId:'' };
-    return s;
-  }catch(e){
-    return { contacts:{}, messages:{}, name:'', peerId:'' };
-  }
-}
-function saveState(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function colorFor(id){
-  let h=0; for(const c of id) h=(h*31+c.charCodeAt(0))>>>0;
-  return COLORS[h%COLORS.length];
-}
-function genPeerId(){
-  // tv-xxxx-yyyy   (random, lowercase)
-  const alpha='abcdefghijkmnpqrstuvwxyz23456789';
-  const r=n=>Array.from({length:n},()=>alpha[Math.floor(Math.random()*alpha.length)]).join('');
-  return `tv-${r(4)}-${r(4)}`;
-}
+function colorFor(id){let h=0;for(const c of String(id||'')) h=(h*31+c.charCodeAt(0))>>>0;return COLORS[h%COLORS.length];}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function nowTime(){ return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); }
+function nowTime(t){const d=t?new Date(t):new Date();return d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}
+function avChar(s){return (s||'?').trim()[0]?.toUpperCase()||'?';}
+function peerIdOf(username){ return PEER_PREFIX + username.toLowerCase(); }
 
-/* ========== Login ========== */
-window.addEventListener('DOMContentLoaded', ()=>{
-  // restore previous name
-  if(state.name){
-    document.getElementById('loginName').value = state.name;
-  }
-  document.getElementById('loginName').addEventListener('keydown', e=>{
-    if(e.key==='Enter') doLogin();
-  });
-});
+/* ========== Storage ========== */
+function loadStore(){
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY)||'null') || { users:{}, session:null }; }
+  catch(e){ return { users:{}, session:null }; }
+}
+function saveStore(){ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+let store = loadStore();
 
-function doLogin(){
-  const name = document.getElementById('loginName').value.trim();
-  if(!name){ toast('이름을 입력하세요','error'); return; }
-  me.name = name;
-  me.avatar = name[0].toUpperCase();
-  state.name = name;
-  // reuse existing peer ID if same name was used; else fresh
-  if(!state.peerId) state.peerId = genPeerId();
-  me.peerId = state.peerId;
-  saveState();
-  document.getElementById('meAvatar').textContent = me.avatar;
-  document.getElementById('login').style.display='none';
+/* ========== Crypto (PBKDF2) ========== */
+async function hashPassword(password, saltB64){
+  const salt = saltB64 ? Uint8Array.from(atob(saltB64), c=>c.charCodeAt(0))
+                       : crypto.getRandomValues(new Uint8Array(16));
+  const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({name:'PBKDF2', salt, iterations:100000, hash:'SHA-256'}, km, 256);
+  const hashB64 = btoa(String.fromCharCode(...new Uint8Array(bits)));
+  return { salt: btoa(String.fromCharCode(...salt)), hash: hashB64 };
+}
+async function verifyPassword(password, saltB64, hashB64){
+  const r = await hashPassword(password, saltB64);
+  return r.hash === hashB64;
+}
+
+/* ========== App state ========== */
+let me = null;        // {username, displayName, peerId}
+let peer = null;
+let connections = {}; // peerId -> DataConnection
+let activeFilter = 'all';
+let currentChat = null;          // friend username
+let pendingFriendRequest = null; // {fromUsername, fromName, conn}
+let pendingOutgoingFR = {};      // username -> true
+
+/* ========== Auth UI ========== */
+function showLogin(){
+  document.getElementById('loginScreen').classList.add('show');
+  document.getElementById('signupScreen').classList.remove('show');
+  document.getElementById('app').classList.remove('show');
+  hideError('login'); hideError('signup');
+}
+function showSignup(){
+  document.getElementById('signupScreen').classList.add('show');
+  document.getElementById('loginScreen').classList.remove('show');
+  document.getElementById('app').classList.remove('show');
+  hideError('login'); hideError('signup');
+}
+function showApp(){
+  document.getElementById('loginScreen').classList.remove('show');
+  document.getElementById('signupScreen').classList.remove('show');
   document.getElementById('app').classList.add('show');
-  document.getElementById('myIdView').textContent = me.peerId;
-  document.getElementById('setName').textContent = me.name;
-  document.getElementById('setId').textContent = me.peerId;
-  initPeer();
-  renderList();
-  bindUi();
+}
+function showError(which,msg){
+  const el=document.getElementById(which==='login'?'loginError':'signupError');
+  el.textContent=msg; el.classList.add('show');
+}
+function hideError(which){
+  document.getElementById(which==='login'?'loginError':'signupError').classList.remove('show');
+}
+
+async function doSignup(){
+  hideError('signup');
+  let username = document.getElementById('signupUsername').value.trim().toLowerCase();
+  const displayName = document.getElementById('signupDisplay').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  const password2 = document.getElementById('signupPassword2').value;
+  if(!username || !displayName || !password){ showError('signup','모든 항목을 입력하세요'); return; }
+  if(!/^[a-z0-9_]{3,20}$/.test(username)){ showError('signup','아이디는 영문 소문자/숫자/_, 3~20자'); return; }
+  if(password.length<4){ showError('signup','비밀번호는 4자 이상'); return; }
+  if(password!==password2){ showError('signup','비밀번호가 일치하지 않습니다'); return; }
+  if(store.users[username]){ showError('signup','이미 사용중인 아이디입니다 (이 기기에서)'); return; }
+
+  const btn = document.getElementById('btnSignup');
+  btn.disabled=true; btn.textContent='계정 생성 중...';
+  try{
+    // 글로벌 ID 가용성 체크 (다른 기기/브라우저에서 같은 username 쓰는 사람이 있는지)
+    await checkPeerIdAvailable(peerIdOf(username));
+    const { salt, hash } = await hashPassword(password);
+    store.users[username] = {
+      username, displayName, salt, hash,
+      contacts:{}, messages:{}, createdAt:Date.now()
+    };
+    store.session = username;
+    saveStore();
+    me = { username, displayName, peerId: peerIdOf(username) };
+    enterApp();
+  }catch(e){
+    showError('signup', e.message || '계정 생성 실패');
+  } finally {
+    btn.disabled=false; btn.textContent='계정 만들기';
+  }
+}
+
+function checkPeerIdAvailable(pid){
+  return new Promise((resolve, reject)=>{
+    const test = new Peer(pid, {debug:0});
+    let done=false;
+    const finish = (ok, err)=>{
+      if(done) return; done=true;
+      try{ test.destroy(); }catch(e){}
+      ok ? resolve() : reject(new Error(err));
+    };
+    test.on('open', ()=> finish(true));
+    test.on('error', e=>{
+      if(e.type==='unavailable-id') finish(false,'이 아이디는 다른 사용자가 이미 사용중입니다 (전세계). 다른 아이디를 선택하세요');
+      else finish(false,'네트워크 오류 — 다시 시도하세요');
+    });
+    setTimeout(()=>finish(false,'서버 응답 없음'), 8000);
+  });
+}
+
+async function doLogin(){
+  hideError('login');
+  const username = document.getElementById('loginUsername').value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword').value;
+  if(!username || !password){ showError('login','아이디와 비밀번호를 입력하세요'); return; }
+  const u = store.users[username];
+  if(!u){ showError('login','이 기기에 등록된 계정이 아닙니다. 회원가입을 진행하세요.'); return; }
+  const btn = document.getElementById('btnLogin');
+  btn.disabled=true; btn.textContent='로그인 중...';
+  try{
+    const ok = await verifyPassword(password, u.salt, u.hash);
+    if(!ok){ showError('login','비밀번호가 잘못되었습니다'); return; }
+    store.session = username;
+    saveStore();
+    me = { username:u.username, displayName:u.displayName, peerId:peerIdOf(u.username) };
+    enterApp();
+  } finally {
+    btn.disabled=false; btn.textContent='로그인';
+  }
 }
 
 function logout(){
   endCall();
   if(peer){ try{ peer.destroy(); }catch(e){} peer=null; }
-  connections = {};
-  document.getElementById('app').classList.remove('show');
-  document.getElementById('login').style.display='flex';
+  connections = {}; me = null; currentChat = null;
+  store.session = null; saveStore();
   document.getElementById('settingsPanel').classList.remove('show');
+  document.getElementById('loginPassword').value='';
+  showLogin();
 }
 
-function resetAll(){
-  if(!confirm('모든 친구·메시지·ID를 삭제합니다. 진행하시겠습니까?')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  state = { contacts:{}, messages:{}, name:'', peerId:'' };
-  logout();
-  document.getElementById('loginName').value='';
+function deleteAccount(){
+  if(!me) return;
+  if(!confirm('이 계정을 영구 삭제합니다. 친구·메시지 모두 삭제됩니다. 계속하시겠습니까?')) return;
+  const u = me.username;
+  endCall();
+  if(peer){ try{ peer.destroy(); }catch(e){} peer=null; }
+  delete store.users[u];
+  store.session = null;
+  saveStore();
+  me=null; currentChat=null; connections={};
+  document.getElementById('settingsPanel').classList.remove('show');
+  showLogin();
+  toast('계정이 삭제되었습니다');
 }
 
-function copyMyId(){
-  navigator.clipboard?.writeText(me.peerId).then(
-    ()=>toast('내 ID가 복사되었습니다'),
-    ()=>toast('복사 실패','error')
-  );
+/* ========== Enter app ========== */
+async function enterApp(){
+  showApp();
+  document.getElementById('meAvatar').textContent = avChar(me.displayName);
+  document.getElementById('myDisplayName').textContent = me.displayName;
+  document.getElementById('myUsername').textContent = me.username;
+  document.getElementById('setName').textContent = me.displayName;
+  document.getElementById('setId').textContent = me.username;
+  document.getElementById('setConn').innerHTML='<span class="conn-status offline"><span class="dot"></span>연결중...</span>';
+  bindAppUi();
+  initPeer();
+  renderList();
 }
 
-/* ========== PeerJS ========== */
+/* ========== PeerJS init ========== */
 function initPeer(){
-  setConn(false, '연결중...');
-  peer = new Peer(me.peerId, { debug: 1 });
-
-  peer.on('open', id=>{
-    me.peerId = id;
-    document.getElementById('myIdView').textContent = id;
-    document.getElementById('setId').textContent = id;
-    setConn(true, '온라인');
+  peer = new Peer(me.peerId, { debug:1 });
+  peer.on('open', ()=>{
+    document.getElementById('setConn').innerHTML='<span class="conn-status"><span class="dot"></span>온라인</span>';
     document.getElementById('meAvatar').classList.remove('offline');
-    toast('서버 연결 완료. 친구를 추가하세요!');
-    // try to reconnect to known contacts
-    Object.keys(state.contacts).forEach(pid=>{
-      tryConnect(pid);
-    });
+    // try connect to all known contacts
+    const data = currentUserData();
+    Object.values(data.contacts||{}).forEach(c=> tryConnect(c.username));
   });
-
-  peer.on('connection', conn=>{
-    setupIncomingDataConn(conn);
-  });
-
-  peer.on('call', mediaCall=>{
-    handleIncomingCall(mediaCall);
-  });
-
+  peer.on('connection', conn => setupIncomingConn(conn));
+  peer.on('call', mc => handleIncomingCall(mc));
   peer.on('disconnected', ()=>{
-    setConn(false,'서버와 연결 끊김');
+    document.getElementById('setConn').innerHTML='<span class="conn-status offline"><span class="dot"></span>재연결중...</span>';
     document.getElementById('meAvatar').classList.add('offline');
-    setTimeout(()=>{ try{ peer.reconnect(); }catch(e){} }, 2000);
+    setTimeout(()=>{ try{ peer.reconnect(); }catch(e){} }, 1500);
   });
-
   peer.on('error', err=>{
     console.error('peer error', err);
-    if(err.type==='unavailable-id'){
-      // ID taken — generate new
-      state.peerId = genPeerId();
-      saveState();
-      try{ peer.destroy(); }catch(e){}
-      me.peerId = state.peerId;
-      initPeer();
-    } else if(err.type==='peer-unavailable'){
-      toast('상대방이 오프라인이거나 ID가 잘못되었습니다','error');
-    } else if(err.type==='network'){
-      toast('네트워크 오류 — 재연결 시도중','error');
-    } else {
-      toast('오류: '+err.type, 'error');
+    if(err.type==='peer-unavailable'){
+      // tried to connect to offline peer; just mark them offline
+      // (the username we tried is in err.message like "Could not connect to peer X")
+    } else if(err.type==='unavailable-id'){
+      // Another tab/device has same account open. Show message and logout.
+      toast('이 계정이 다른 곳에서 접속중입니다','error');
+    } else if(err.type==='network' || err.type==='disconnected'){
+      // ignored — peer auto-reconnect
     }
   });
 }
 
-function setConn(online, label){
-  const el = document.getElementById('setConn');
-  el.innerHTML = `<span class="conn-status ${online?'':'offline'}"><span class="dot"></span>${label}</span>`;
-}
+function currentUserData(){ return store.users[me.username]; }
+function persistUser(){ saveStore(); }
 
-/* ========== Data Connection setup ========== */
-function tryConnect(peerId){
-  if(connections[peerId] && connections[peerId].open) return connections[peerId];
+/* ========== Connections ========== */
+function tryConnect(otherUsername){
   if(!peer || peer.disconnected) return null;
+  const pid = peerIdOf(otherUsername);
+  if(connections[otherUsername] && connections[otherUsername].open) return connections[otherUsername];
   try{
-    const conn = peer.connect(peerId, {reliable:true, metadata:{name:me.name}});
-    setupOutgoingDataConn(conn);
+    const conn = peer.connect(pid, {reliable:true, metadata:{username:me.username, displayName:me.displayName}});
+    setupOutgoingConn(conn, otherUsername);
     return conn;
-  }catch(e){
-    return null;
-  }
+  }catch(e){ return null; }
 }
-
-function setupOutgoingDataConn(conn){
+function setupOutgoingConn(conn, otherUsername){
   conn.on('open', ()=>{
-    connections[conn.peer] = conn;
-    if(state.contacts[conn.peer]){
-      state.contacts[conn.peer].online = true;
-      saveState();
-      renderList();
-      updateTopbar();
+    connections[otherUsername] = conn;
+    const data = currentUserData();
+    if(data.contacts[otherUsername]){
+      data.contacts[otherUsername].online = true;
+      persistUser();
+      renderList(); updateTopbar();
     }
-    // if we have a pending outgoing friend request, send it now
-    if(pendingOutgoingFR[conn.peer]){
-      conn.send({type:'friend_request', name:me.name});
+    if(pendingOutgoingFR[otherUsername]){
+      conn.send({type:'friend_request', username:me.username, displayName:me.displayName});
     }
   });
-  conn.on('data', data=> handleData(conn, data));
+  conn.on('data', d => handleData(otherUsername, conn, d));
   conn.on('close', ()=>{
-    delete connections[conn.peer];
-    if(state.contacts[conn.peer]){
-      state.contacts[conn.peer].online=false;
-      saveState();
-      renderList();
-      updateTopbar();
+    delete connections[otherUsername];
+    const data = currentUserData();
+    if(data.contacts[otherUsername]){
+      data.contacts[otherUsername].online=false;
+      persistUser();
+      renderList(); updateTopbar();
     }
   });
-  conn.on('error', err=>{
-    console.error('conn error', err);
-  });
+  conn.on('error', e=> console.warn('conn err',e));
 }
-function setupIncomingDataConn(conn){
+function setupIncomingConn(conn){
+  // We don't yet know who they are. Wait for their first message.
   conn.on('open', ()=>{
-    connections[conn.peer] = conn;
-    if(state.contacts[conn.peer]){
-      state.contacts[conn.peer].online = true;
-      saveState();
-      renderList();
-      updateTopbar();
+    const meta = conn.metadata || {};
+    const fromUsername = String(meta.username||'').toLowerCase();
+    if(!fromUsername){ try{conn.close();}catch(e){} return; }
+    connections[fromUsername] = conn;
+    const data = currentUserData();
+    if(data.contacts[fromUsername]){
+      data.contacts[fromUsername].online=true;
+      persistUser();
+      renderList(); updateTopbar();
     }
-  });
-  conn.on('data', data=> handleData(conn, data));
-  conn.on('close', ()=>{
-    delete connections[conn.peer];
-    if(state.contacts[conn.peer]){
-      state.contacts[conn.peer].online=false;
-      saveState();
-      renderList();
-      updateTopbar();
-    }
-  });
-  conn.on('error', err=>{
-    console.error('inc conn error', err);
+    conn.on('data', d => handleData(fromUsername, conn, d));
+    conn.on('close', ()=>{
+      delete connections[fromUsername];
+      const dd = currentUserData();
+      if(dd.contacts[fromUsername]){
+        dd.contacts[fromUsername].online=false;
+        persistUser();
+        renderList(); updateTopbar();
+      }
+    });
+    conn.on('error', e=> console.warn('inc conn err',e));
   });
 }
 
-function handleData(conn, data){
-  const fromId = conn.peer;
+function handleData(fromUsername, conn, data){
   if(!data || typeof data!=='object') return;
+  const me_data = currentUserData();
 
-  // === Friend request from someone we don't have yet ===
   if(data.type==='friend_request'){
-    if(state.contacts[fromId]){
-      // already friends — auto accept
-      conn.send({type:'friend_response', accepted:true, name:me.name});
-      state.contacts[fromId].online = true;
-      saveState(); renderList();
+    const fromName = data.displayName || data.username;
+    if(me_data.contacts[fromUsername]){
+      // already friends — just confirm
+      conn.send({type:'friend_response', accepted:true, username:me.username, displayName:me.displayName});
+      me_data.contacts[fromUsername].online=true;
+      persistUser(); renderList();
       return;
     }
-    // show modal
-    pendingFriendRequest = { peerId: fromId, name: data.name||'(이름없음)', conn };
+    pendingFriendRequest = { fromUsername, fromName, conn };
     document.getElementById('friendReqText').innerHTML =
-      `<b>${escapeHtml(data.name||'알 수 없음')}</b> 님이 친구 요청을 보냈습니다.<br>` +
-      `<span style="color:var(--mute);font-size:12px;font-family:monospace">${escapeHtml(fromId)}</span>`;
+      `<b>${escapeHtml(fromName)}</b> 님이 친구 요청을 보냈습니다.<br>`+
+      `<span style="color:var(--mute);font-size:12px;font-family:monospace">@${escapeHtml(fromUsername)}</span>`;
     document.getElementById('friendReqModal').classList.add('show');
-    playRing(false);
+    playRing();
     return;
   }
 
   if(data.type==='friend_response'){
+    const fromName = data.displayName || fromUsername;
     if(data.accepted){
-      // add them
-      if(!state.contacts[fromId]){
-        state.contacts[fromId] = {
-          peerId: fromId, name: data.name||fromId,
-          color: colorFor(fromId), avatar:(data.name||'?')[0].toUpperCase(),
-          online:true, addedAt:Date.now()
+      if(!me_data.contacts[fromUsername]){
+        me_data.contacts[fromUsername] = {
+          username: fromUsername, displayName: fromName,
+          online:true, since:Date.now()
         };
+      } else {
+        me_data.contacts[fromUsername].online=true;
       }
-      state.contacts[fromId].online = true;
-      delete pendingOutgoingFR[fromId];
-      saveState(); renderList();
-      toast(`${data.name||'친구'}님이 친구 요청을 수락했습니다`);
+      delete pendingOutgoingFR[fromUsername];
+      persistUser();
+      renderList();
+      toast(`${fromName}님이 친구 요청을 수락했습니다`);
     } else {
-      delete pendingOutgoingFR[fromId];
-      toast(`친구 요청이 거절되었습니다`,'warn');
+      delete pendingOutgoingFR[fromUsername];
+      toast('친구 요청이 거절되었습니다','warn');
     }
     return;
   }
 
-  // === All other types require friendship ===
-  if(!state.contacts[fromId]){
-    // ignore — security: we don't accept anything from non-friends
-    console.warn('ignored data from non-friend', fromId);
+  // 그 외는 친구만 허용
+  if(!me_data.contacts[fromUsername]){
+    console.warn('ignored data from non-friend', fromUsername);
     return;
   }
 
   if(data.type==='msg'){
-    if(!state.messages[fromId]) state.messages[fromId]=[];
-    state.messages[fromId].push({who:fromId, text:data.text, time:data.time||nowTime()});
-    if(currentChat===fromId){
-      renderMessages();
-    } else {
-      // increment unread
-      state.contacts[fromId].unread = (state.contacts[fromId].unread||0)+1;
+    if(!me_data.messages[fromUsername]) me_data.messages[fromUsername]=[];
+    me_data.messages[fromUsername].push({who:fromUsername, text:data.text, time:data.time||Date.now()});
+    if(currentChat===fromUsername) renderMessages();
+    else {
+      me_data.contacts[fromUsername].unread = (me_data.contacts[fromUsername].unread||0)+1;
       playPing();
     }
-    saveState();
-    renderList();
+    persistUser(); renderList();
     return;
   }
-
   if(data.type==='typing'){
-    if(state.contacts[fromId]){
-      state.contacts[fromId].typing = !!data.on;
-      if(currentChat===fromId) updateTopbar();
+    if(me_data.contacts[fromUsername]){
+      me_data.contacts[fromUsername].typing = !!data.on;
+      if(currentChat===fromUsername) updateTopbar();
       renderList();
     }
     return;
   }
-
-  if(data.type==='profile'){
-    // friend updated their name
-    if(state.contacts[fromId]){
-      state.contacts[fromId].name = data.name || state.contacts[fromId].name;
-      state.contacts[fromId].avatar = (data.name||'?')[0].toUpperCase();
-      saveState(); renderList(); updateTopbar();
-    }
-    return;
-  }
 }
 
-/* ========== Friend management ========== */
+/* ========== Friend ops ========== */
 function openAddContact(){
-  document.getElementById('addPeerId').value='';
+  document.getElementById('addUsername').value='';
   document.getElementById('addContactModal').classList.add('show');
-  setTimeout(()=>document.getElementById('addPeerId').focus(),100);
+  setTimeout(()=>document.getElementById('addUsername').focus(),100);
 }
-function closeAddContact(){
-  document.getElementById('addContactModal').classList.remove('show');
-}
+function closeAddContact(){ document.getElementById('addContactModal').classList.remove('show'); }
 function sendFriendRequest(){
-  const pid = document.getElementById('addPeerId').value.trim();
-  if(!pid){ toast('ID를 입력하세요','error'); return; }
-  if(pid===me.peerId){ toast('자기 자신을 추가할 수 없습니다','error'); return; }
-  if(state.contacts[pid]){ toast('이미 친구입니다','warn'); closeAddContact(); return; }
-  if(!peer || peer.disconnected){ toast('서버에 연결되지 않았습니다','error'); return; }
-
-  pendingOutgoingFR[pid] = me.name;
-  const conn = tryConnect(pid);
+  const username = document.getElementById('addUsername').value.trim().toLowerCase();
+  if(!username){ toast('아이디를 입력하세요','error'); return; }
+  if(username===me.username){ toast('자기 자신은 추가할 수 없습니다','error'); return; }
+  const data = currentUserData();
+  if(data.contacts[username]){ toast('이미 친구입니다','warn'); closeAddContact(); return; }
+  if(!peer || peer.disconnected){ toast('네트워크에 연결되지 않았습니다','error'); return; }
+  pendingOutgoingFR[username] = true;
+  const conn = tryConnect(username);
   if(!conn){ toast('연결 시도 실패','error'); return; }
   closeAddContact();
-  toast(`${pid}에게 요청을 보냈습니다. 상대방의 수락을 기다리는 중...`);
-  // safety timeout
+  toast(`@${username}에게 요청을 보냈습니다. 상대 응답 대기중...`);
   setTimeout(()=>{
-    if(pendingOutgoingFR[pid]){
-      // didn't receive response
-      toast('응답이 없습니다. 상대방이 오프라인일 수 있습니다','warn');
-      delete pendingOutgoingFR[pid];
+    if(pendingOutgoingFR[username]){
+      delete pendingOutgoingFR[username];
+      toast('응답이 없습니다. 상대가 오프라인일 수 있습니다','warn');
     }
   }, 20000);
 }
-
 function respondFriendRequest(accept){
   document.getElementById('friendReqModal').classList.remove('show');
   stopRing();
   if(!pendingFriendRequest) return;
-  const { peerId, name, conn } = pendingFriendRequest;
+  const { fromUsername, fromName, conn } = pendingFriendRequest;
+  const data = currentUserData();
   if(accept){
-    state.contacts[peerId] = {
-      peerId, name, color:colorFor(peerId), avatar:name[0].toUpperCase(),
-      online:true, addedAt:Date.now()
+    data.contacts[fromUsername] = {
+      username:fromUsername, displayName:fromName, online:true, since:Date.now()
     };
-    saveState();
+    persistUser();
     renderList();
-    conn.send({type:'friend_response', accepted:true, name:me.name});
-    toast(`${name}님과 친구가 되었습니다!`);
+    conn.send({type:'friend_response', accepted:true, username:me.username, displayName:me.displayName});
+    toast(`${fromName}님과 친구가 되었습니다!`);
   } else {
-    conn.send({type:'friend_response', accepted:false, name:me.name});
-    setTimeout(()=>{ try{ conn.close(); }catch(e){} }, 500);
+    conn.send({type:'friend_response', accepted:false});
+    setTimeout(()=>{ try{ conn.close(); }catch(e){} }, 400);
   }
   pendingFriendRequest = null;
 }
 
 function showContactInfo(){
   if(!currentChat) return;
-  const c = state.contacts[currentChat];
-  if(!c) return;
-  document.getElementById('ciName').textContent = c.name;
+  const c = currentUserData().contacts[currentChat]; if(!c) return;
+  document.getElementById('ciName').textContent = c.displayName;
   document.getElementById('ciInfo').innerHTML =
-    `ID: <code style="color:var(--accent-2)">${escapeHtml(c.peerId)}</code><br>` +
-    `상태: ${c.online?'<span style="color:#86efac">온라인</span>':'<span style="color:#9ca3af">오프라인</span>'}<br>` +
-    `추가일: ${new Date(c.addedAt).toLocaleDateString('ko-KR')}`;
+    `아이디: <code style="color:var(--accent-2)">@${escapeHtml(c.username)}</code><br>`+
+    `상태: ${c.online?'<span style="color:#86efac">온라인</span>':'<span style="color:#9ca3af">오프라인</span>'}<br>`+
+    `친구 추가일: ${new Date(c.since).toLocaleDateString('ko-KR')}`;
   document.getElementById('contactInfoModal').classList.add('show');
 }
 function deleteContact(){
   if(!currentChat) return;
   if(!confirm('이 친구를 삭제하시겠습니까? 메시지도 함께 삭제됩니다.')) return;
-  const pid = currentChat;
-  if(connections[pid]){ try{ connections[pid].close(); }catch(e){} delete connections[pid]; }
-  delete state.contacts[pid];
-  delete state.messages[pid];
-  saveState();
-  currentChat = null;
+  const u = currentChat;
+  if(connections[u]){ try{connections[u].close();}catch(e){} delete connections[u]; }
+  const data = currentUserData();
+  delete data.contacts[u]; delete data.messages[u];
+  persistUser();
+  currentChat=null;
   document.getElementById('contactInfoModal').classList.remove('show');
-  document.getElementById('topActions').style.display='none';
-  document.getElementById('curAvatar').style.display='none';
-  document.getElementById('curName').textContent='대화를 선택하세요';
-  document.getElementById('curStatus').textContent='왼쪽에서 친구를 선택하거나 추가하세요';
-  document.getElementById('messages').innerHTML = `
-    <div class="empty-chat">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <div style="font-size:15px;color:var(--text);margin-bottom:6px">대화를 시작하세요</div>
-      <div style="font-size:13px">친구 ID를 추가하고 양쪽 모두 수락하면<br>채팅과 통화가 가능합니다.</div>
-    </div>`;
-  document.getElementById('composer').style.display='none';
+  closeChatView();
   renderList();
   toast('친구가 삭제되었습니다');
 }
 
-/* ========== UI: list/messages ========== */
+/* ========== List & messages ========== */
 function renderList(){
-  const cont = document.getElementById('chatList');
-  const arr = Object.values(state.contacts).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  if(!me) return;
+  const data = currentUserData();
   const search = document.getElementById('searchInput').value.toLowerCase();
-  const filt = activeFilter;
+  const cont = document.getElementById('chatList');
+  const arr = Object.values(data.contacts||{}).sort((a,b)=>(b.since||0)-(a.since||0));
 
-  let totalUnread = 0;
-  arr.forEach(c=>{ totalUnread += c.unread||0; });
-  const badge = document.getElementById('totalBadge');
-  if(totalUnread>0){ badge.style.display='flex'; badge.textContent=totalUnread; }
-  else badge.style.display='none';
+  let totalUnread=0; arr.forEach(c=>totalUnread+=(c.unread||0));
+  const tBadge = document.getElementById('totalBadge');
+  if(totalUnread>0){ tBadge.style.display='flex'; tBadge.textContent=totalUnread; } else tBadge.style.display='none';
 
   if(arr.length===0){
     cont.innerHTML = `
       <div class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
         <h3>친구가 없습니다</h3>
-        <p>친구 추가 버튼을 눌러<br>상대방의 ID로 친구를 추가하세요.</p>
+        <p>친구의 아이디를 추가해서<br>채팅을 시작해보세요.</p>
         <button onclick="openAddContact()">+ 친구 추가</button>
       </div>`;
     return;
@@ -1143,26 +1170,29 @@ function renderList(){
 
   let html='';
   arr.forEach(c=>{
-    if(filt==='online' && !c.online) return;
-    if(filt==='unread' && !(c.unread>0)) return;
-    if(search && !c.name.toLowerCase().includes(search)) return;
-    const lastMsgs = state.messages[c.peerId]||[];
-    const last = lastMsgs[lastMsgs.length-1];
-    const prevTxt = c.typing? '<span style="color:var(--accent-2)">입력 중...</span>'
-      : last? (last.who==='me'?'나: ':'') + escapeHtml(last.text)
-      : '<span style="color:var(--accent-2)">대화 시작하기</span>';
-    const prevTime = last? last.time : '';
+    if(activeFilter==='online' && !c.online) return;
+    if(activeFilter==='unread' && !(c.unread>0)) return;
+    if(search && !(c.displayName.toLowerCase().includes(search) || c.username.toLowerCase().includes(search))) return;
+    const lastList = data.messages[c.username]||[];
+    const last = lastList[lastList.length-1];
+    const prevTxt = c.typing
+      ? '<span style="color:var(--accent-2)">입력 중...</span>'
+      : last
+        ? (last.who==='me'?'나: ':'') + escapeHtml(last.text)
+        : '<span style="color:var(--accent-2)">대화 시작하기</span>';
+    const prevTime = last ? nowTime(last.time) : '';
+    const u = c.unread||0;
     html += `
-      <div class="chat-item ${c.peerId===currentChat?'active':''}" onclick="openChat('${c.peerId}')">
-        <div class="avatar ${c.online?'online':'offline'}" style="background:${c.color}">${escapeHtml(c.avatar)}</div>
+      <div class="chat-item ${c.username===currentChat?'active':''}" onclick="openChat('${escapeHtml(c.username)}')">
+        <div class="avatar ${c.online?'online':'offline'}" style="background:${colorFor(c.username)}">${escapeHtml(avChar(c.displayName))}</div>
         <div class="chat-meta">
           <div class="chat-row1">
-            <div class="chat-name">${escapeHtml(c.name)}</div>
+            <div class="chat-name">${escapeHtml(c.displayName)}</div>
             <div class="chat-time">${prevTime}</div>
           </div>
           <div class="chat-row2">
             <div class="chat-preview">${prevTxt}</div>
-            ${c.unread>0? `<div class="chat-unread">${c.unread}</div>`:''}
+            ${u>0?`<div class="chat-unread">${u}</div>`:''}
           </div>
         </div>
       </div>`;
@@ -1170,71 +1200,71 @@ function renderList(){
   cont.innerHTML = html || `<div class="empty-state"><p>일치하는 친구가 없습니다</p></div>`;
 }
 
-function openChat(pid){
-  if(!state.contacts[pid]) return;
-  currentChat = pid;
-  const c = state.contacts[pid];
-  c.unread = 0;
-  saveState();
-
+function openChat(username){
+  const data = currentUserData();
+  if(!data.contacts[username]) return;
+  currentChat = username;
+  data.contacts[username].unread = 0;
+  persistUser();
+  const c = data.contacts[username];
   document.getElementById('topActions').style.display='flex';
   const av = document.getElementById('curAvatar');
   av.style.display='flex';
-  av.textContent = c.avatar;
-  av.style.background = c.color;
+  av.textContent = avChar(c.displayName);
+  av.style.background = colorFor(c.username);
   av.className = 'avatar ' + (c.online?'online':'offline');
   updateTopbar();
-
   document.getElementById('composer').style.display='flex';
+  document.body.dataset.view='chat';
+  if(!connections[username] || !connections[username].open) tryConnect(username);
   renderMessages();
   renderList();
-  document.body.dataset.view='chat';
-
-  // ensure connection open
-  if(!connections[pid] || !connections[pid].open){
-    tryConnect(pid);
-  }
 }
-
+function closeChatView(){
+  document.getElementById('topActions').style.display='none';
+  document.getElementById('curAvatar').style.display='none';
+  document.getElementById('curName').textContent='대화를 선택하세요';
+  document.getElementById('curStatus').textContent='왼쪽에서 친구를 선택하거나 추가하세요';
+  document.getElementById('composer').style.display='none';
+  document.getElementById('messages').innerHTML = `
+    <div class="empty-chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <div style="font-size:15px;color:var(--text);margin-bottom:6px">대화를 선택하세요</div>
+    </div>`;
+}
 function updateTopbar(){
   if(!currentChat) return;
-  const c = state.contacts[currentChat];
-  if(!c) return;
-  document.getElementById('curName').textContent = c.name;
-  document.getElementById('curStatus').textContent = c.typing? '입력 중...' : (c.online?'온라인':'오프라인');
-  const av = document.getElementById('curAvatar');
-  av.className = 'avatar ' + (c.online?'online':'offline');
-
-  // disable call buttons if offline
-  const offline = !c.online;
-  document.getElementById('btnVoice').disabled = offline;
-  document.getElementById('btnVideo').disabled = offline;
+  const c = currentUserData().contacts[currentChat]; if(!c) return;
+  document.getElementById('curName').textContent = c.displayName;
+  document.getElementById('curStatus').textContent = c.typing? '입력 중...' : (c.online? `온라인 · @${c.username}` : `오프라인 · @${c.username}`);
+  document.getElementById('curAvatar').className='avatar '+(c.online?'online':'offline');
+  document.getElementById('btnVoice').disabled = !c.online;
+  document.getElementById('btnVideo').disabled = !c.online;
 }
-
 function renderMessages(){
+  if(!currentChat) return;
+  const data = currentUserData();
+  const list = data.messages[currentChat]||[];
+  const c = data.contacts[currentChat];
   const wrap = document.getElementById('messages');
-  if(!currentChat){ return; }
-  const list = state.messages[currentChat]||[];
-  const c = state.contacts[currentChat];
   if(list.length===0){
     wrap.innerHTML = `
       <div class="empty-chat">
-        <div class="avatar online" style="width:80px;height:80px;font-size:28px;background:${c.color}">${escapeHtml(c.avatar)}</div>
-        <div style="font-size:18px;color:var(--text);margin:14px 0 4px">${escapeHtml(c.name)}</div>
-        <div style="font-size:13px">${c.online?'온라인 — 메시지를 보내보세요':'오프라인 — 상대방이 접속하면 전달됩니다'}</div>
+        <div class="avatar online" style="width:80px;height:80px;font-size:28px;background:${colorFor(c.username)}">${escapeHtml(avChar(c.displayName))}</div>
+        <div style="font-size:18px;color:var(--text);margin:14px 0 4px">${escapeHtml(c.displayName)}</div>
+        <div style="font-size:13px">@${escapeHtml(c.username)}</div>
+        <div style="font-size:13px; margin-top:10px">${c.online?'온라인 — 메시지를 보내보세요':'오프라인 — 상대가 접속하면 전송됩니다'}</div>
       </div>`;
     return;
   }
-  let html = '<div class="day">— 오늘 —</div>';
+  let html='<div class="day">— 대화 —</div>';
   list.forEach(m=>{
-    if(m.who==='system'){
-      html += `<div class="msg system"><div class="bubble">${escapeHtml(m.text)}</div></div>`;
-    } else if(m.who==='me'){
-      html += `<div class="msg me"><div class="bubble">${escapeHtml(m.text)}<div class="meta" style="text-align:right">${m.time}</div></div></div>`;
+    if(m.who==='me'){
+      html += `<div class="msg me"><div class="bubble">${escapeHtml(m.text)}<div class="meta" style="text-align:right">${nowTime(m.time)}</div></div></div>`;
     } else {
       html += `<div class="msg">
-        <div class="av" style="background:${c.color}">${escapeHtml(c.avatar)}</div>
-        <div class="bubble">${escapeHtml(m.text)}<div class="meta">${m.time}</div></div>
+        <div class="av" style="background:${colorFor(c.username)}">${escapeHtml(avChar(c.displayName))}</div>
+        <div class="bubble">${escapeHtml(m.text)}<div class="meta">${nowTime(m.time)}</div></div>
       </div>`;
     }
   });
@@ -1242,112 +1272,64 @@ function renderMessages(){
   wrap.scrollTop = wrap.scrollHeight;
 }
 
-/* ========== Send messages ========== */
-function bindUi(){
-  document.getElementById('btnSend').onclick = sendMessage;
-  const ta = document.getElementById('msgInput');
-  ta.addEventListener('keydown', e=>{
-    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
-  });
-  let typingTimer=null;
-  ta.addEventListener('input', ()=>{
-    ta.style.height='auto';
-    ta.style.height = Math.min(ta.scrollHeight,120)+'px';
-    if(currentChat && connections[currentChat]?.open){
-      connections[currentChat].send({type:'typing', on:true});
-      clearTimeout(typingTimer);
-      typingTimer=setTimeout(()=>{
-        if(connections[currentChat]?.open) connections[currentChat].send({type:'typing', on:false});
-      }, 1500);
-    }
-  });
-  document.getElementById('searchInput').addEventListener('input', renderList);
-  document.querySelectorAll('.tab').forEach(t=>{
-    t.onclick = ()=>{
-      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-      t.classList.add('active');
-      activeFilter = t.dataset.filter;
-      renderList();
-    };
-  });
-  document.getElementById('btnVoice').onclick = ()=>startCall('voice');
-  document.getElementById('btnVideo').onclick = ()=>startCall('video');
-
-  // close modals on background click
-  ['addContactModal','contactInfoModal'].forEach(id=>{
-    document.getElementById(id).addEventListener('click', e=>{
-      if(e.target.id===id) e.target.classList.remove('show');
-    });
-  });
-
-  // before unload
-  window.addEventListener('beforeunload', ()=>{
-    if(peer){ try{ peer.destroy(); }catch(e){} }
-  });
-}
-
+/* ========== Send ========== */
 function sendMessage(){
   const ta = document.getElementById('msgInput');
-  const txt = ta.value.trim();
-  if(!txt || !currentChat) return;
-  const c = state.contacts[currentChat];
-  if(!c){ toast('이 사용자는 친구가 아닙니다','error'); return; }
+  const txt = ta.value.trim(); if(!txt || !currentChat) return;
+  const data = currentUserData();
+  const c = data.contacts[currentChat]; if(!c){ toast('친구가 아닙니다','error'); return; }
   if(!connections[currentChat] || !connections[currentChat].open){
     if(!c.online){ toast('상대방이 오프라인입니다','warn'); return; }
     tryConnect(currentChat);
-    toast('연결 중... 잠시 후 다시 시도하세요','warn');
-    return;
+    toast('연결 중... 잠시 후 다시 시도하세요','warn'); return;
   }
-  const t = nowTime();
+  const t = Date.now();
   connections[currentChat].send({type:'msg', text:txt, time:t});
-  if(!state.messages[currentChat]) state.messages[currentChat]=[];
-  state.messages[currentChat].push({who:'me', text:txt, time:t});
-  saveState();
+  if(!data.messages[currentChat]) data.messages[currentChat]=[];
+  data.messages[currentChat].push({who:'me', text:txt, time:t});
+  persistUser();
   ta.value=''; ta.style.height='auto';
-  renderMessages();
-  renderList();
+  renderMessages(); renderList();
 }
 
-/* ========== Toast ========== */
+/* ========== Toast/settings/copy ========== */
 function toast(msg, kind=''){
-  const t = document.createElement('div');
+  const t=document.createElement('div');
   t.className='toast '+kind;
-  t.innerHTML = `<div class="dot"></div><span>${escapeHtml(msg)}</span>`;
+  t.innerHTML=`<div class="dot"></div><span>${escapeHtml(msg)}</span>`;
   document.getElementById('toasts').appendChild(t);
-  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(20px)'; t.style.transition='.3s'; }, 4000);
-  setTimeout(()=>t.remove(), 4400);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(20px)'; t.style.transition='.3s'; },4000);
+  setTimeout(()=>t.remove(),4400);
+}
+function toggleSettings(){ document.getElementById('settingsPanel').classList.toggle('show'); }
+function copyMyId(){
+  navigator.clipboard?.writeText(me.username).then(
+    ()=>toast('아이디가 복사되었습니다'),
+    ()=>toast('복사 실패','error')
+  );
 }
 
-function toggleSettings(){
-  document.getElementById('settingsPanel').classList.toggle('show');
-}
-
-/* ========== Audio cues ========== */
-let _ringInterval=null, _ringCtx=null;
-function playRing(loop=true){
+/* ========== Audio ========== */
+let _ringInterval=null,_ringCtx=null;
+function playRing(){
   try{
-    _ringCtx = new (window.AudioContext||window.webkitAudioContext)();
+    _ringCtx=new (window.AudioContext||window.webkitAudioContext)();
     const tone=()=>{
-      const o=_ringCtx.createOscillator(); const g=_ringCtx.createGain();
+      const o=_ringCtx.createOscillator(),g=_ringCtx.createGain();
       o.frequency.value=480; o.connect(g); g.connect(_ringCtx.destination);
       g.gain.value=0;
       g.gain.linearRampToValueAtTime(.08,_ringCtx.currentTime+.05);
       g.gain.linearRampToValueAtTime(0,_ringCtx.currentTime+.6);
       o.start(); o.stop(_ringCtx.currentTime+.65);
     };
-    tone();
-    if(loop) _ringInterval=setInterval(tone, 1500);
+    tone(); _ringInterval=setInterval(tone,1500);
   }catch(e){}
 }
-function stopRing(){
-  if(_ringInterval) clearInterval(_ringInterval);
-  if(_ringCtx) try{_ringCtx.close()}catch(e){}
-  _ringInterval=null; _ringCtx=null;
-}
+function stopRing(){ if(_ringInterval) clearInterval(_ringInterval); if(_ringCtx) try{_ringCtx.close()}catch(e){} _ringInterval=null; _ringCtx=null; }
 function playPing(){
   try{
     const ctx=new (window.AudioContext||window.webkitAudioContext)();
-    const o=ctx.createOscillator(); const g=ctx.createGain();
+    const o=ctx.createOscillator(),g=ctx.createGain();
     o.frequency.value=880; o.connect(g); g.connect(ctx.destination);
     g.gain.value=0;
     g.gain.linearRampToValueAtTime(.1,ctx.currentTime+.02);
@@ -1358,339 +1340,253 @@ function playPing(){
 }
 
 /* =========================================================
- * CALL handling — real WebRTC via PeerJS
+ *  CALL — PeerJS MediaConnection
  * ========================================================= */
 let call = {
-  active:false, type:null, peerId:null,
+  active:false, type:null, username:null,
   micOn:true, camOn:true, sharing:false, recording:false,
   startedAt:null, timerId:null,
-  localStream:null, screenStream:null,
-  remoteStream:null,
-  mediaConn:null,         // PeerJS MediaConnection
-  videoTrackOriginal:null // to restore after screen share
+  localStream:null, screenStream:null, remoteStream:null,
+  mediaConn:null, originalVideoTrack:null
 };
-
-let pendingIncomingCall = null; // MediaConnection awaiting answer
+let pendingIncomingCall = null;
 
 async function getLocalStream(type){
-  const constraints = { audio:true, video: type==='video' };
-  return navigator.mediaDevices.getUserMedia(constraints);
+  return navigator.mediaDevices.getUserMedia({audio:true, video: type==='video'});
 }
 
 async function startCall(type){
   if(!currentChat) return;
-  const c = state.contacts[currentChat];
-  if(!c){ toast('친구가 아닙니다','error'); return; }
+  const data = currentUserData();
+  const c = data.contacts[currentChat]; if(!c) return;
   if(!c.online){ toast('상대방이 오프라인입니다','warn'); return; }
   if(call.active){ toast('이미 통화중입니다','warn'); return; }
 
   let stream;
-  try{
-    stream = await getLocalStream(type);
-  }catch(e){
-    toast('카메라/마이크 권한이 필요합니다','error');
-    return;
-  }
+  try{ stream = await getLocalStream(type); }
+  catch(e){ toast('카메라/마이크 권한이 필요합니다','error'); return; }
 
-  // notify type via metadata
-  const mc = peer.call(c.peerId, stream, {metadata:{type, name:me.name}});
+  const mc = peer.call(peerIdOf(c.username), stream, {metadata:{type, username:me.username, displayName:me.displayName}});
   if(!mc){ toast('통화 시작 실패','error'); stream.getTracks().forEach(t=>t.stop()); return; }
 
-  call.active=true; call.type=type; call.peerId=c.peerId;
-  call.localStream = stream; call.mediaConn = mc;
-  call.micOn=true; call.camOn=(type==='video');
-  call.startedAt=Date.now();
-  if(type==='video'){
-    const vt = stream.getVideoTracks()[0];
-    if(vt) call.videoTrackOriginal = vt;
-  }
-
-  showCallUi(c, '발신중...');
-
-  mc.on('stream', remote=>{
-    call.remoteStream = remote;
-    document.getElementById('callTitle').textContent = c.name;
-    attachRemoteToTile(remote);
-  });
-  mc.on('close', endCall);
-  mc.on('error', e=>{ console.error(e); toast('통화 오류','error'); endCall(); });
-}
-
-function handleIncomingCall(mediaCall){
-  const fromId = mediaCall.peer;
-  const c = state.contacts[fromId];
-  if(!c){
-    // not a friend — reject
-    mediaCall.close();
-    return;
-  }
-  if(call.active){
-    mediaCall.close();
-    return;
-  }
-  pendingIncomingCall = mediaCall;
-  const type = mediaCall.metadata?.type || 'voice';
-  document.getElementById('incName').textContent = c.name;
-  document.getElementById('incType').textContent = (type==='video'?'화상':'음성') + '통화 수신중...';
-  const av = document.getElementById('incAv');
-  av.textContent = c.avatar;
-  av.style.background = c.color;
-  document.getElementById('incoming').classList.add('show');
-  playRing(true);
-}
-
-async function acceptIncomingCall(){
-  if(!pendingIncomingCall) return;
-  const mc = pendingIncomingCall;
-  pendingIncomingCall = null;
-  document.getElementById('incoming').classList.remove('show');
-  stopRing();
-
-  const fromId = mc.peer;
-  const c = state.contacts[fromId];
-  const type = mc.metadata?.type || 'voice';
-  let stream;
-  try{
-    stream = await getLocalStream(type);
-  }catch(e){
-    toast('카메라/마이크 권한이 필요합니다','error');
-    mc.close();
-    return;
-  }
-  mc.answer(stream);
-
-  call.active=true; call.type=type; call.peerId=fromId;
+  call.active=true; call.type=type; call.username=c.username;
   call.localStream=stream; call.mediaConn=mc;
   call.micOn=true; call.camOn=(type==='video');
   call.startedAt=Date.now();
   if(type==='video'){
     const vt = stream.getVideoTracks()[0];
-    if(vt) call.videoTrackOriginal = vt;
+    if(vt) call.originalVideoTrack = vt;
   }
-
-  showCallUi(c, c.name);
-
+  showCallUI(c, c.displayName + ' (발신중...)');
   mc.on('stream', remote=>{
     call.remoteStream = remote;
-    attachRemoteToTile(remote);
+    document.getElementById('callTitle').textContent = c.displayName;
+    attachRemote(remote);
   });
   mc.on('close', endCall);
   mc.on('error', e=>{ console.error(e); endCall(); });
 }
 
-function rejectIncomingCall(){
-  if(pendingIncomingCall){
-    pendingIncomingCall.close();
-    pendingIncomingCall=null;
+function handleIncomingCall(mediaCall){
+  const meta = mediaCall.metadata || {};
+  const fromUsername = String(meta.username||'').toLowerCase();
+  const data = currentUserData();
+  if(!data.contacts[fromUsername]){ mediaCall.close(); return; }
+  if(call.active){ mediaCall.close(); return; }
+  pendingIncomingCall = mediaCall;
+  const c = data.contacts[fromUsername];
+  document.getElementById('incName').textContent = c.displayName;
+  document.getElementById('incType').textContent = (meta.type==='video'?'화상':'음성') + '통화 수신중...';
+  const av = document.getElementById('incAv');
+  av.textContent = avChar(c.displayName);
+  av.style.background = colorFor(c.username);
+  document.getElementById('incoming').classList.add('show');
+  playRing();
+}
+
+async function acceptIncomingCall(){
+  if(!pendingIncomingCall) return;
+  const mc = pendingIncomingCall; pendingIncomingCall = null;
+  document.getElementById('incoming').classList.remove('show');
+  stopRing();
+  const meta = mc.metadata || {};
+  const fromUsername = String(meta.username||'').toLowerCase();
+  const data = currentUserData();
+  const c = data.contacts[fromUsername]; if(!c) return;
+  const type = meta.type||'voice';
+  let stream;
+  try{ stream = await getLocalStream(type); }
+  catch(e){ toast('카메라/마이크 권한이 필요합니다','error'); mc.close(); return; }
+  mc.answer(stream);
+  call.active=true; call.type=type; call.username=fromUsername;
+  call.localStream=stream; call.mediaConn=mc;
+  call.micOn=true; call.camOn=(type==='video');
+  call.startedAt=Date.now();
+  if(type==='video'){
+    const vt = stream.getVideoTracks()[0];
+    if(vt) call.originalVideoTrack = vt;
   }
+  showCallUI(c, c.displayName);
+  mc.on('stream', r=>{ call.remoteStream=r; attachRemote(r); });
+  mc.on('close', endCall);
+  mc.on('error', ()=>endCall());
+}
+
+function rejectIncomingCall(){
+  if(pendingIncomingCall){ pendingIncomingCall.close(); pendingIncomingCall=null; }
   document.getElementById('incoming').classList.remove('show');
   stopRing();
 }
 
-function showCallUi(c, title){
+function showCallUI(c, title){
   document.getElementById('callTitle').textContent = title;
   document.getElementById('callOverlay').classList.add('show');
   buildTiles(c);
   startTimer();
   updateCallButtons();
 }
-
 function buildTiles(c){
-  const grid = document.getElementById('tileGrid');
-  grid.innerHTML='';
-  const isVideo = call.type==='video';
-  // local tile
-  grid.innerHTML += `
+  const grid=document.getElementById('tileGrid');
+  grid.innerHTML = `
     <div class="tile" id="tile-local">
       <video autoplay muted playsinline></video>
-      <div class="placeholder" style="background:linear-gradient(135deg,#7c5cff,#22c1c3)">${escapeHtml(me.avatar)}</div>
+      <div class="placeholder" style="background:linear-gradient(135deg,#7c5cff,#22c1c3)">${escapeHtml(avChar(me.displayName))}</div>
       <div class="label">나</div>
-    </div>`;
-  // remote tile
-  grid.innerHTML += `
+    </div>
     <div class="tile" id="tile-remote">
       <video autoplay playsinline></video>
-      <div class="placeholder" style="background:${c.color}">${escapeHtml(c.avatar)}</div>
-      <div class="label">${escapeHtml(c.name)}</div>
+      <div class="placeholder" style="background:${colorFor(c.username)}">${escapeHtml(avChar(c.displayName))}</div>
+      <div class="label">${escapeHtml(c.displayName)}</div>
     </div>`;
-
-  const localV = document.querySelector('#tile-local video');
-  const localP = document.querySelector('#tile-local .placeholder');
-  if(call.localStream){
-    localV.srcObject = call.localStream;
-    if(isVideo && call.camOn){ localP.style.display='none'; localV.style.display='block'; }
-    else { localV.style.display='none'; localP.style.display='flex'; }
-  }
-  // remote starts hidden until stream arrives
+  const lv=document.querySelector('#tile-local video'), lp=document.querySelector('#tile-local .placeholder');
+  lv.srcObject = call.localStream;
+  if(call.type==='video' && call.camOn){ lp.style.display='none'; lv.style.display='block'; }
+  else { lv.style.display='none'; lp.style.display='flex'; }
   document.querySelector('#tile-remote video').style.display='none';
 }
-
-function attachRemoteToTile(stream){
-  const tile = document.getElementById('tile-remote');
-  if(!tile) return;
-  const v = tile.querySelector('video');
-  v.srcObject = stream;
-  if(call.type==='video' || stream.getVideoTracks().some(t=>t.enabled)){
-    v.style.display='block';
-    tile.querySelector('.placeholder').style.display='none';
-  } else {
-    v.style.display='none';
-    tile.querySelector('.placeholder').style.display='flex';
-  }
-  // simple talking detection via audio level
+function attachRemote(stream){
+  const tile=document.getElementById('tile-remote'); if(!tile) return;
+  const v=tile.querySelector('video');
+  v.srcObject=stream;
+  if(stream.getVideoTracks().length>0){ v.style.display='block'; tile.querySelector('.placeholder').style.display='none'; }
+  else { v.style.display='none'; tile.querySelector('.placeholder').style.display='flex'; }
   attachTalkingDetector(stream, tile);
 }
-
 function attachTalkingDetector(stream, tileEl){
   try{
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const src = ctx.createMediaStreamSource(stream);
-    const an = ctx.createAnalyser();
-    an.fftSize=512;
-    src.connect(an);
+    if(!stream.getAudioTracks().length) return;
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const src=ctx.createMediaStreamSource(stream);
+    const an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
     const data=new Uint8Array(an.frequencyBinCount);
     const tick=()=>{
-      if(!call.active){ ctx.close(); return; }
+      if(!call.active){ try{ctx.close()}catch(e){} return; }
       an.getByteFrequencyData(data);
-      let sum=0; for(let i=0;i<data.length;i++) sum+=data[i];
-      const avg = sum/data.length;
-      tileEl.classList.toggle('talking', avg>15);
+      let s=0; for(let i=0;i<data.length;i++) s+=data[i];
+      tileEl.classList.toggle('talking', (s/data.length)>15);
       requestAnimationFrame(tick);
     };
     tick();
   }catch(e){}
 }
-
 function startTimer(){
-  const el = document.getElementById('callTime');
-  call.timerId = setInterval(()=>{
+  const el=document.getElementById('callTime');
+  call.timerId=setInterval(()=>{
     const d=Math.floor((Date.now()-call.startedAt)/1000);
-    const m=String(Math.floor(d/60)).padStart(2,'0');
-    const s=String(d%60).padStart(2,'0');
-    el.textContent = `${m}:${s}`;
-  }, 500);
+    el.textContent=`${String(Math.floor(d/60)).padStart(2,'0')}:${String(d%60).padStart(2,'0')}`;
+  },500);
 }
-
 function updateCallButtons(){
-  const ccMic=document.getElementById('ccMic');
-  const ccCam=document.getElementById('ccCam');
-  const ccShare=document.getElementById('ccShare');
-  const ccRec=document.getElementById('ccRec');
+  const ccMic=document.getElementById('ccMic'), ccCam=document.getElementById('ccCam');
+  const ccShare=document.getElementById('ccShare'), ccRec=document.getElementById('ccRec');
   ccMic.classList.toggle('off', !call.micOn);
   ccCam.classList.toggle('off', !call.camOn);
   ccShare.classList.toggle('active', call.sharing);
   ccRec.classList.toggle('active', call.recording);
   ccRec.style.color = call.recording?'#ef4444':'';
-
   ccMic.innerHTML = call.micOn ?
     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>` :
     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/></svg>`;
-
   ccCam.innerHTML = call.camOn ?
     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>` :
     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
 }
-
 function toggleMic(){
   if(!call.localStream) return;
-  call.micOn = !call.micOn;
-  call.localStream.getAudioTracks().forEach(t=> t.enabled = call.micOn);
+  call.micOn=!call.micOn;
+  call.localStream.getAudioTracks().forEach(t=>t.enabled=call.micOn);
   updateCallButtons();
   toast(call.micOn?'마이크 켜짐':'마이크 음소거');
 }
-
 function toggleCam(){
   if(!call.localStream) return;
-  const tracks = call.localStream.getVideoTracks();
-  if(tracks.length===0){
-    toast('이 통화는 음성 전용입니다','warn');
-    return;
-  }
-  call.camOn = !call.camOn;
-  tracks.forEach(t=> t.enabled = call.camOn);
-  // update local placeholder
-  const tile = document.getElementById('tile-local');
+  const tracks=call.localStream.getVideoTracks();
+  if(!tracks.length){ toast('이 통화는 음성 전용입니다','warn'); return; }
+  call.camOn=!call.camOn;
+  tracks.forEach(t=>t.enabled=call.camOn);
+  const tile=document.getElementById('tile-local');
   if(tile){
-    const v = tile.querySelector('video');
-    const p = tile.querySelector('.placeholder');
+    const v=tile.querySelector('video'), p=tile.querySelector('.placeholder');
     if(call.camOn){ v.style.display='block'; p.style.display='none'; }
     else { v.style.display='none'; p.style.display='flex'; }
   }
   updateCallButtons();
 }
-
 async function toggleShare(){
   if(call.sharing){
-    // stop sharing
-    if(call.screenStream){
-      call.screenStream.getTracks().forEach(t=>t.stop());
-      call.screenStream=null;
+    if(call.screenStream) call.screenStream.getTracks().forEach(t=>t.stop());
+    call.screenStream=null;
+    if(call.originalVideoTrack && call.mediaConn){
+      const pc=call.mediaConn.peerConnection;
+      const sender=pc?.getSenders().find(s=>s.track && s.track.kind==='video');
+      if(sender) try{ await sender.replaceTrack(call.originalVideoTrack); }catch(e){}
     }
-    // restore camera track
-    if(call.videoTrackOriginal && call.mediaConn){
-      replaceVideoSender(call.videoTrackOriginal);
-      // restore in local preview
-      const v = document.querySelector('#tile-local video');
-      if(v && call.localStream) v.srcObject = call.localStream;
-    }
+    const v=document.querySelector('#tile-local video');
+    if(v && call.localStream) v.srcObject=call.localStream;
     call.sharing=false;
     document.getElementById('shareBanner').style.display='none';
     document.getElementById('pipLocal').style.display='none';
     updateCallButtons();
-    toast('화면 공유 종료');
-    return;
+    toast('화면 공유 종료'); return;
   }
   try{
-    const screen = await navigator.mediaDevices.getDisplayMedia({video:true, audio:false});
-    call.screenStream = screen;
-    call.sharing = true;
-    const screenTrack = screen.getVideoTracks()[0];
-    if(call.mediaConn){ replaceVideoSender(screenTrack); }
-    // local preview shows screen
-    const v = document.querySelector('#tile-local video');
-    if(v) v.srcObject = screen;
-    const p = document.querySelector('#tile-local .placeholder');
+    const screen=await navigator.mediaDevices.getDisplayMedia({video:true, audio:false});
+    call.screenStream=screen; call.sharing=true;
+    const screenTrack=screen.getVideoTracks()[0];
+    if(call.mediaConn){
+      const pc=call.mediaConn.peerConnection;
+      const sender=pc?.getSenders().find(s=>s.track && s.track.kind==='video');
+      if(sender) await sender.replaceTrack(screenTrack);
+      else if(pc) pc.addTrack(screenTrack, screen);
+    }
+    const v=document.querySelector('#tile-local video');
+    const p=document.querySelector('#tile-local .placeholder');
+    if(v) v.srcObject=screen;
     if(p) p.style.display='none';
     if(v) v.style.display='block';
-
-    // PiP shows your camera
     if(call.localStream && call.localStream.getVideoTracks().length){
       document.getElementById('pipLocal').style.display='block';
-      document.getElementById('pipVideo').srcObject = call.localStream;
+      document.getElementById('pipVideo').srcObject=call.localStream;
     }
     document.getElementById('shareBanner').style.display='flex';
     updateCallButtons();
     toast('화면 공유 시작');
-    screenTrack.onended = ()=>{ if(call.sharing) toggleShare(); };
-  }catch(e){
-    toast('화면 공유가 취소되었습니다','warn');
-  }
+    screenTrack.onended=()=>{ if(call.sharing) toggleShare(); };
+  }catch(e){ toast('화면 공유가 취소되었습니다','warn'); }
 }
-
-function replaceVideoSender(track){
-  try{
-    const pc = call.mediaConn.peerConnection;
-    if(!pc) return;
-    const sender = pc.getSenders().find(s=> s.track && s.track.kind==='video');
-    if(sender) sender.replaceTrack(track);
-    else pc.addTrack(track, call.localStream);
-  }catch(e){ console.error(e); }
-}
-
-let _mediaRecorder=null, _recChunks=[];
+let _mediaRecorder=null,_recChunks=[];
 function toggleRec(){
   if(!call.recording){
-    const src = call.screenStream || call.remoteStream || call.localStream;
+    const src=call.screenStream||call.remoteStream||call.localStream;
     if(!src){ toast('녹화할 스트림이 없습니다','warn'); return; }
     try{
-      _mediaRecorder = new MediaRecorder(src, {mimeType:'video/webm'});
+      _mediaRecorder=new MediaRecorder(src,{mimeType:'video/webm'});
       _recChunks=[];
       _mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) _recChunks.push(e.data); };
       _mediaRecorder.onstop=()=>{
         const blob=new Blob(_recChunks,{type:'video/webm'});
         const url=URL.createObjectURL(blob);
-        const a=document.createElement('a');
-        a.href=url; a.download=`talkverse-${Date.now()}.webm`; a.click();
+        const a=document.createElement('a'); a.href=url; a.download=`talkverse-${Date.now()}.webm`; a.click();
         URL.revokeObjectURL(url);
       };
       _mediaRecorder.start();
@@ -1699,31 +1595,78 @@ function toggleRec(){
       toast('녹화 시작');
     }catch(e){ toast('녹화 실패: '+e.message,'error'); }
   } else {
-    _mediaRecorder.stop();
+    try{_mediaRecorder.stop();}catch(e){}
     call.recording=false;
     document.getElementById('recBadge').style.display='none';
     toast('녹화 파일 다운로드');
   }
   updateCallButtons();
 }
-
 function endCall(){
   if(!call.active) return;
   if(call.localStream) call.localStream.getTracks().forEach(t=>t.stop());
   if(call.screenStream) call.screenStream.getTracks().forEach(t=>t.stop());
   if(call.mediaConn){ try{ call.mediaConn.close(); }catch(e){} }
   if(call.timerId) clearInterval(call.timerId);
-  if(call.recording && _mediaRecorder?.state==='recording') _mediaRecorder.stop();
-  call = {active:false, type:null, peerId:null, micOn:true, camOn:true,
-    sharing:false, recording:false, startedAt:null, timerId:null,
-    localStream:null, screenStream:null, remoteStream:null, mediaConn:null,
-    videoTrackOriginal:null};
+  if(call.recording && _mediaRecorder?.state==='recording') try{_mediaRecorder.stop();}catch(e){}
+  call={active:false,type:null,username:null,micOn:true,camOn:true,sharing:false,recording:false,
+    startedAt:null,timerId:null,localStream:null,screenStream:null,remoteStream:null,mediaConn:null,originalVideoTrack:null};
   document.getElementById('callOverlay').classList.remove('show');
   document.getElementById('shareBanner').style.display='none';
   document.getElementById('pipLocal').style.display='none';
   document.getElementById('recBadge').style.display='none';
-  toast('통화 종료');
+  pendingIncomingCall=null; stopRing();
 }
+
+/* ========== UI binding ========== */
+function bindAppUi(){
+  if(window._uiBound) return; window._uiBound=true;
+  document.getElementById('btnSend').onclick = sendMessage;
+  const ta=document.getElementById('msgInput');
+  let typingTimer=null;
+  ta.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
+  ta.addEventListener('input', ()=>{
+    ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,120)+'px';
+    if(currentChat && connections[currentChat]?.open){
+      connections[currentChat].send({type:'typing', on:true});
+      clearTimeout(typingTimer);
+      typingTimer=setTimeout(()=>{ if(connections[currentChat]?.open) connections[currentChat].send({type:'typing', on:false}); },1500);
+    }
+  });
+  document.getElementById('searchInput').addEventListener('input', renderList);
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.onclick=()=>{
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      activeFilter=t.dataset.filter; renderList();
+    };
+  });
+  document.getElementById('btnVoice').onclick=()=>startCall('voice');
+  document.getElementById('btnVideo').onclick=()=>startCall('video');
+  ['addContactModal','contactInfoModal','friendReqModal'].forEach(id=>{
+    document.getElementById(id).addEventListener('click', e=>{ if(e.target.id===id && id!=='friendReqModal') e.target.classList.remove('show'); });
+  });
+  document.getElementById('addUsername').addEventListener('keydown', e=>{ if(e.key==='Enter') sendFriendRequest(); });
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('btnLogin').onclick = doLogin;
+  document.getElementById('btnSignup').onclick = doSignup;
+  document.getElementById('loginPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  document.getElementById('signupPassword2').addEventListener('keydown', e=>{ if(e.key==='Enter') doSignup(); });
+
+  // 자동 로그인 (이미 세션이 살아있으면)
+  if(store.session && store.users[store.session]){
+    const u = store.users[store.session];
+    me = { username:u.username, displayName:u.displayName, peerId:peerIdOf(u.username) };
+    enterApp();
+  } else {
+    showLogin();
+  }
+});
+window.addEventListener('beforeunload', ()=>{
+  try{ if(peer) peer.destroy(); }catch(e){}
+});
 </script>
 </body>
 </html>
