@@ -731,6 +731,17 @@ const PEER_PREFIX = 'tvfree_';     // 모든 PeerID는 이 prefix를 사용 (전
 const COLORS=['#ec4899','#3b82f6','#f59e0b','#22c55e','#a855f7','#ef4444','#06b6d4','#f97316','#84cc16','#8b5cf6'];
 const STORE_KEY = 'talkverse:v3';
 
+// ICE 서버 — STUN + 무료 TURN (서로 다른 네트워크/모바일에서도 연결되도록)
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  { urls: 'turn:openrelay.metered.ca:80',  username:'openrelayproject', credential:'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username:'openrelayproject', credential:'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username:'openrelayproject', credential:'openrelayproject' },
+];
+const PEER_OPTIONS = { debug: 1, config: { iceServers: ICE_SERVERS } };
+
 function colorFor(id){let h=0;for(const c of String(id||'')) h=(h*31+c.charCodeAt(0))>>>0;return COLORS[h%COLORS.length];}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function nowTime(t){const d=t?new Date(t):new Date();return d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}
@@ -809,8 +820,8 @@ async function doSignup(){
   const btn = document.getElementById('btnSignup');
   btn.disabled=true; btn.textContent='계정 생성 중...';
   try{
-    // 글로벌 ID 가용성 체크 (다른 기기/브라우저에서 같은 username 쓰는 사람이 있는지)
-    await checkPeerIdAvailable(peerIdOf(username));
+    // 실제 Peer를 띄워서 글로벌 ID 가용성을 확인 (성공 시 그대로 사용)
+    const livePeer = await openPeer(peerIdOf(username));
     const { salt, hash } = await hashPassword(password);
     store.users[username] = {
       username, displayName, salt, hash,
@@ -819,7 +830,9 @@ async function doSignup(){
     store.session = username;
     saveStore();
     me = { username, displayName, peerId: peerIdOf(username) };
-    enterApp();
+    peer = livePeer;
+    attachPeerHandlers();
+    enterAppNoInit();
   }catch(e){
     showError('signup', e.message || '계정 생성 실패');
   } finally {
@@ -827,21 +840,23 @@ async function doSignup(){
   }
 }
 
-function checkPeerIdAvailable(pid){
+// PeerJS 인스턴스를 만들고 'open'까지 기다린 뒤 반환
+function openPeer(pid){
   return new Promise((resolve, reject)=>{
-    const test = new Peer(pid, {debug:0});
+    const p = new Peer(pid, PEER_OPTIONS);
     let done=false;
-    const finish = (ok, err)=>{
+    const finish=(ok,err)=>{
       if(done) return; done=true;
-      try{ test.destroy(); }catch(e){}
-      ok ? resolve() : reject(new Error(err));
+      if(ok) resolve(p);
+      else { try{ p.destroy(); }catch(e){} reject(new Error(err)); }
     };
-    test.on('open', ()=> finish(true));
-    test.on('error', e=>{
-      if(e.type==='unavailable-id') finish(false,'이 아이디는 다른 사용자가 이미 사용중입니다 (전세계). 다른 아이디를 선택하세요');
-      else finish(false,'네트워크 오류 — 다시 시도하세요');
+    p.on('open', ()=> finish(true));
+    p.on('error', e=>{
+      if(e.type==='unavailable-id') finish(false,'이 아이디는 다른 사용자가 이미 사용중입니다. 다른 아이디를 선택하세요');
+      else if(e.type==='network'||e.type==='socket-error') finish(false,'네트워크 오류 — 인터넷 연결을 확인하세요');
+      else finish(false,'연결 오류: '+e.type);
     });
-    setTimeout(()=>finish(false,'서버 응답 없음'), 8000);
+    setTimeout(()=>finish(false,'서버 응답 없음 — 인터넷을 확인하세요'), 12000);
   });
 }
 
@@ -857,10 +872,16 @@ async function doLogin(){
   try{
     const ok = await verifyPassword(password, u.salt, u.hash);
     if(!ok){ showError('login','비밀번호가 잘못되었습니다'); return; }
+    // PeerJS 연결 시도 (다른 기기에서 같은 계정 접속중이면 실패)
+    const livePeer = await openPeer(peerIdOf(u.username));
     store.session = username;
     saveStore();
     me = { username:u.username, displayName:u.displayName, peerId:peerIdOf(u.username) };
-    enterApp();
+    peer = livePeer;
+    attachPeerHandlers();
+    enterAppNoInit();
+  }catch(e){
+    showError('login', e.message || '로그인 실패');
   } finally {
     btn.disabled=false; btn.textContent='로그인';
   }
@@ -892,7 +913,25 @@ function deleteAccount(){
 }
 
 /* ========== Enter app ========== */
-async function enterApp(){
+function enterAppNoInit(){
+  // peer 는 이미 openPeer 로 만들어져 있음
+  showApp();
+  document.getElementById('meAvatar').textContent = avChar(me.displayName);
+  document.getElementById('myDisplayName').textContent = me.displayName;
+  document.getElementById('myUsername').textContent = me.username;
+  document.getElementById('setName').textContent = me.displayName;
+  document.getElementById('setId').textContent = me.username;
+  document.getElementById('setConn').innerHTML='<span class="conn-status"><span class="dot"></span>온라인</span>';
+  document.getElementById('meAvatar').classList.remove('offline');
+  bindAppUi();
+  // 알려진 친구들에게 연결 시도
+  const data = currentUserData();
+  Object.values(data.contacts||{}).forEach(c=> tryConnect(c.username));
+  renderList();
+}
+
+// 자동 로그인용 — peer 가 없을 때 만들어서 연결한 뒤 진입
+async function autoEnterApp(){
   showApp();
   document.getElementById('meAvatar').textContent = avChar(me.displayName);
   document.getElementById('myDisplayName').textContent = me.displayName;
@@ -901,20 +940,22 @@ async function enterApp(){
   document.getElementById('setId').textContent = me.username;
   document.getElementById('setConn').innerHTML='<span class="conn-status offline"><span class="dot"></span>연결중...</span>';
   bindAppUi();
-  initPeer();
   renderList();
-}
-
-/* ========== PeerJS init ========== */
-function initPeer(){
-  peer = new Peer(me.peerId, { debug:1 });
-  peer.on('open', ()=>{
+  try{
+    peer = await openPeer(me.peerId);
+    attachPeerHandlers();
     document.getElementById('setConn').innerHTML='<span class="conn-status"><span class="dot"></span>온라인</span>';
     document.getElementById('meAvatar').classList.remove('offline');
-    // try connect to all known contacts
     const data = currentUserData();
     Object.values(data.contacts||{}).forEach(c=> tryConnect(c.username));
-  });
+  }catch(e){
+    document.getElementById('setConn').innerHTML='<span class="conn-status offline"><span class="dot"></span>'+escapeHtml(e.message||'연결 실패')+'</span>';
+    toast(e.message||'네트워크 연결 실패','error');
+  }
+}
+
+/* peer 인스턴스에 이벤트 핸들러 부착 (signup/login 후 공통) */
+function attachPeerHandlers(){
   peer.on('connection', conn => setupIncomingConn(conn));
   peer.on('call', mc => handleIncomingCall(mc));
   peer.on('disconnected', ()=>{
@@ -922,16 +963,20 @@ function initPeer(){
     document.getElementById('meAvatar').classList.add('offline');
     setTimeout(()=>{ try{ peer.reconnect(); }catch(e){} }, 1500);
   });
+  peer.on('open', ()=>{
+    document.getElementById('setConn').innerHTML='<span class="conn-status"><span class="dot"></span>온라인</span>';
+    document.getElementById('meAvatar').classList.remove('offline');
+  });
   peer.on('error', err=>{
-    console.error('peer error', err);
+    console.warn('peer error', err);
     if(err.type==='peer-unavailable'){
-      // tried to connect to offline peer; just mark them offline
-      // (the username we tried is in err.message like "Could not connect to peer X")
+      toast('상대방이 오프라인이거나 ID를 찾을 수 없습니다','warn');
     } else if(err.type==='unavailable-id'){
-      // Another tab/device has same account open. Show message and logout.
-      toast('이 계정이 다른 곳에서 접속중입니다','error');
-    } else if(err.type==='network' || err.type==='disconnected'){
-      // ignored — peer auto-reconnect
+      toast('이 계정이 다른 기기/탭에서 접속중입니다','error');
+    } else if(err.type==='browser-incompatible'){
+      toast('이 브라우저는 WebRTC를 지원하지 않습니다','error');
+    } else if(err.type==='network' || err.type==='socket-error'){
+      toast('네트워크 오류 — 재연결 시도중','warn');
     }
   });
 }
@@ -1659,7 +1704,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   if(store.session && store.users[store.session]){
     const u = store.users[store.session];
     me = { username:u.username, displayName:u.displayName, peerId:peerIdOf(u.username) };
-    enterApp();
+    autoEnterApp();
   } else {
     showLogin();
   }
